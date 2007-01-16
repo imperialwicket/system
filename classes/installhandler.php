@@ -19,21 +19,21 @@ class InstallHandler extends ActionHandler {
     
     /* Check that directory to write config.php is writeable */
     $local_writeable= is_writeable(HABARI_PATH);
-    $this->handler_vars['local_writeable']= $local_writeable;
+    $this->theme->assign('local_writeable', $local_writeable);
     if (! $local_writeable)
       $requirements_met= false;
     
     /* Check versions of PHP */
     $php_version_ok= version_compare(phpversion(), MIN_PHP_VERSION, '>=');
-    $this->handler_vars['php_version_ok']= $php_version_ok;
-    $this->handler_vars['PHP_OS']= PHP_OS;
-    $this->handler_vars['PHP_VERSION']= phpversion();
+    $this->theme->assign('php_version_ok', $php_version_ok);
+    $this->theme->assign('PHP_OS', PHP_OS);;
+    $this->theme->assign('PHP_VERSION',  phpversion());
     if (! $php_version_ok)
       $requirements_met= false;
 
     /* Check for PDO extension */
     $pdo_extension_ok= extension_loaded('pdo');
-    $this->handler_vars['pdo_extension_ok']= $pdo_extension_ok;
+    $this->theme->assign('pdo_extension_ok', $pdo_extension_ok);
     if (! $pdo_extension_ok)
       $requirements_met= false;
 
@@ -70,6 +70,10 @@ class InstallHandler extends ActionHandler {
     $db_schema= $this->handler_vars['db_schema'];
     $db_user= $this->handler_vars['db_user'];
     $db_pass= $this->handler_vars['db_pass'];
+    
+    foreach (array('db_root_user', 'db_root_pass', 'db_host', 'db_type', 'db_schema', 'db_user', 'db_pass') as $key) {
+      $this->theme->assign($key, $$key);
+    };
 
     /* 
      * OK, user has choice to either install the database
@@ -79,23 +83,24 @@ class InstallHandler extends ActionHandler {
      */
     $install_method= $this->handler_vars['install_method'];
     $install_via_root= ($install_method == 'root');
+
     if ($install_via_root) {
       /* OK, user is saying they have root access and can install the schema directly.  Let's check */
       if (! $this->check_root_db_credentials()) {
-        $this->handler_vars['form_errors']= array('db_root_user'=>'Bad root user credentials.');
+        $this->theme->assign('form_errors', array('db_root_user'=>'Bad root user credentials.'));
         return false;
       }
       else {
         if (empty($db_user)) {
-          $this->handler_vars['form_errors']= array('db_user'=>'User is required.');
+          $this->theme->assign('form_errors', array('db_user'=>'User is required.'));
           return false;
         }
         if (empty($db_pass)) {
-          $this->handler_vars['form_errors']= array('db_pass'=>'Password is required.');
+          $this->theme->assign('form_errors', array('db_pass'=>'Password is required.'));
           return false;
         }
         if (empty($db_schema)) {
-          $this->handler_vars['form_errors']= array('db_schema'=>'Name for database is required.');
+          $this->theme->assign('form_errors', array('db_schema'=>'Name for database is required.'));
           return false;
         }
         /* Alright, we're in with root priveleges, so create the database and db user */
@@ -161,7 +166,7 @@ class InstallHandler extends ActionHandler {
     $db_schema= $this->handler_vars['db_schema'];
 
     if (!empty($db_root_user) && empty($db_host)) {
-      $this->handler_vars['form_errors']= array('db_host'=>'Host is required.');
+      $this->theme->assign('form_errors', array('db_host'=>'Host is required.'));
       return false;
     }
     
