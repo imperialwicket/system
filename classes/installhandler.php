@@ -40,10 +40,17 @@ class InstallHandler extends ActionHandler {
     return $requirements_met;
   }
 
+  /**
+   * Entry point for installation.  The reason there is a begin_install
+   * method to handle is that conceivably, the user can stop installation
+   * mid-install and need an alternate entry point action at a later time.
+   */
   public function act_begin_install() {
+
+    /* Create a new theme to handle the display of the installer */
     $this->theme= new Theme('installer', 'SmartyEngine', HABARI_PATH . '/system/installer/');
     if (! $this->meets_all_requirements()) {
-      $this->theme->display('requirements');
+      $this->display('requirements');
       return true;
     }
 
@@ -53,11 +60,30 @@ class InstallHandler extends ActionHandler {
      */
     $this->handler_vars= array_merge($this->handler_vars, $_POST);
     if (! $this->install_db()) {
-      $this->theme->display('db_setup');
+      $this->display('db_setup');
       return true;
     }
   }
 
+  /**
+   * Helper function to remove code repetition
+   *
+   * @param template_name Name of template to use
+   */
+  private function display($template_name) {
+    foreach ($this->handler_vars as $key=>$value) {
+      $this->theme->assign($key, $value);
+    }
+    $this->theme->display($template_name);
+  }
+
+  /**
+   * Attempts to install the database.  Returns the result of 
+   * the installation, adding errors to the theme if any
+   * occur
+   * 
+   * @return bool result of installation
+   */
   private function install_db() {
     /* If there was nothing posted, just return false */
     if (! isset($this->handler_vars['db_user']))
@@ -71,10 +97,6 @@ class InstallHandler extends ActionHandler {
     $db_user= $this->handler_vars['db_user'];
     $db_pass= $this->handler_vars['db_pass'];
     
-    foreach (array('db_root_user', 'db_root_pass', 'db_host', 'db_type', 'db_schema', 'db_user', 'db_pass') as $key) {
-      $this->theme->assign($key, $$key);
-    };
-
     /* 
      * OK, user has choice to either install the database
      * via the super (administrator) user, /or/ install the 
@@ -154,6 +176,10 @@ class InstallHandler extends ActionHandler {
     return $queries;
   }
 
+  /**
+   * Writes the configuration file with the variables needed for 
+   * initialization of the application
+   */
   private function write_config_file() {
     //$file= fopen(HABARI_PATH . '/config.php', 'w');
   }

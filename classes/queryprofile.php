@@ -8,7 +8,6 @@ class QueryProfile {
   public $start_time;   // time that query started execution
   public $end_time;     // time that query ended execution
   public $query_text;   // SQL text
-  public $error_text;   // Error message, if any
 
   /**
    * Constructor for the query profile.  Automatically sets the 
