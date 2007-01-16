@@ -39,7 +39,7 @@ class Theme {
         /* we load template engine from specified args, not DB */
         $this->name= func_get_arg(0);
         $template_engine= func_get_arg(1);
-        $directory= HABARI_PATH . '/themes/' . $this->name . '/';
+        $directory= HABARI_PATH . '/system/themes/' . $this->name . '/';
         $directory= (func_num_args()==3 ? func_get_arg(2) : $directory);
         $this->template_engine= new $template_engine();
         $this->template_engine->set_template_dir($directory);
@@ -58,7 +58,7 @@ class Theme {
       die('Theme not installed.');
     $this->name= $theme->name;
     $this->version= $theme->version;
-    $this->theme_dir= HABARI_PATH . '/themes/' . $theme->theme_dir . '/';
+    $this->theme_dir= HABARI_PATH . '/user/themes/' . $theme->theme_dir . '/';
     //    $this->config_vars= $theme['config_vars'];
     // Set up the corresponding engine to handle the templating
     $this->template_engine= new $theme->template_engine();
@@ -73,7 +73,7 @@ class Theme {
    * @note  This may change to an XML file format
    */
   public function info($theme) {
-    $info_file= HABARI_PATH . '/themes/' . $theme . '.info';
+    $info_file= HABARI_PATH . '/user/themes/' . $theme . '.info';
     if ( file_exists($info_file) )
       $theme_data= parse_ini_file($info_file); // Use NO sections INI
     if (! empty($theme_data) ) {
