@@ -153,7 +153,7 @@ class DB extends Singleton {
         $profile->start();
       }
 			if (! $pdo_statement->execute($args)) {
-				DB::instance()->errors[]= array('query'=>$query,'error'=>$pdo_statement->errorInfo());
+				DB::add_error(array('query'=>$query,'error'=>$pdo_statement->errorInfo()));
 				return false;
 			}
       if (DB::instance()->keep_profile) {
@@ -163,7 +163,7 @@ class DB extends Singleton {
       return true;
 		}
     else {
-  		DB::instance()->errors[]= array('query'=>$query,'error'=>$pdo_statement->errorInfo());
+  		DB::add_error(array('query'=>$query,'error'=>$pdo_statement->errorInfo()));
   		return false;
     }
 	}
@@ -222,7 +222,7 @@ class DB extends Singleton {
         $profile->start();
       }
 			if (! $pdo_statement->execute($args)) {
-				DB::instance()->errors[]= array('query'=>$query,'error'=>$pdo_statement->errorInfo());
+				DB::add_error(array('query'=>$query,'error'=>$pdo_statement->errorInfo()));
 				return false;
 			}
       if (DB::instance()->keep_profile) {
@@ -232,7 +232,7 @@ class DB extends Singleton {
       return true;
 		}
     else {
-  		DB::instance()->errors[]= array('query'=>$query,'error'=>$pdo_statement->errorInfo());
+  		DB::add_error(array('query'=>$query,'error'=>$pdo_statement->errorInfo()));
   		return false;
     }
 	}
@@ -281,6 +281,15 @@ class DB extends Singleton {
   public function get_profiles() {
     return DB::instance()->profiles;
   }
+
+  /**
+   * Adds an error to the internal collection
+   *
+   * @param   error   array('query'=>query, 'error'=>errorInfo)
+   */
+  private function add_error($error) {
+    DB::instance()->errors[]= $error;
+  }
 	
 	/**
 	 * Returns error data gathered from database connection
@@ -310,7 +319,8 @@ class DB extends Singleton {
 	 * @return array Data for the last error	 
 	 **/
 	public function get_last_error() {
-		return end(DB::instance()->errors);
+    $error= end(DB::instance()->errors);
+    return (array('query'=>$error['query'], 'message'=>$error['error'][2]));
 	}
 
 	/**

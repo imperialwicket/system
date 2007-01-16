@@ -108,13 +108,19 @@ class InstallHandler extends ActionHandler {
         DB::begin_transaction();
         foreach ($create_queries as $query) {
           if (! DB::query($query)) {
-            $this->handler_vars['form_errors']= array('db_host'=>'Could not create schema.');
+            $error= DB::get_last_error();
+            $this->theme->assign('form_errors', array('db_host'=>'Could not create schema...' . $error['message']));
             DB::rollback();
             return false;
           }
         }
-        DB::commit();
         /* OK, schema and user created.  Let's install the DB tables now. */ 
+        if (! $this->install_schema_tables()) {
+          $this->theme->assign('form_errors', array('db_schema', 'Could not create schema tables'));
+          DB::rollback();
+          return false;
+        }
+        DB::commit();
       }
     }
     else {

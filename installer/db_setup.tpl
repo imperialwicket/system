@@ -70,7 +70,7 @@
           </div>
           <div class="row">
             <label for="db_pass">Database Password</label>
-            <input type="textbox" name="db_pass" value="{$db_pass}" size="30" maxlength="50" />
+            <input type="password" name="db_pass" value="{$db_pass}" size="30" maxlength="50" />
             {include file="form.error.tpl" Id="db_pass"}
           </div>
           <div class="row">
