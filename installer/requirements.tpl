@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Language" content="en"/>
     <meta name="robots" content="no index,no follow" />
     <link rel="shortcut icon" href="/favicon.ico" />
-    <link rel="stylesheet" type="text/css" media="all" href="themes/installer/style.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="system/installer/style.css" />
   </head>
   <body>
     <div id="container">

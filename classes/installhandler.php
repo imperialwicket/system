@@ -41,7 +41,7 @@ class InstallHandler extends ActionHandler {
   }
 
   public function act_begin_install() {
-    $this->theme= new Theme('installer', 'SmartyEngine', HABARI_PATH . 'system/installer/');
+    $this->theme= new Theme('installer', 'SmartyEngine', HABARI_PATH . '/system/installer/');
     if (! $this->meets_all_requirements()) {
       $this->theme->display('requirements');
       return true;
