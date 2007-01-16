@@ -65,7 +65,7 @@ class DB extends Singleton {
    * @param (optional)  db_pass           the database user password
    * @return  bool
    */
-  public function connect() {
+  public static function connect() {
     /* 
       Short-circuit out if we're already connected
       and the caller hasn't supplied function args
@@ -106,7 +106,7 @@ class DB extends Singleton {
    *
    * @param table name of the table
    */
-  public function table($name) {
+  public static function table($name) {
     if (isset(DB::instance()->sql_tables[$name]))
       return DB::instance()->sql_tables[$name];
     else
@@ -120,7 +120,7 @@ class DB extends Singleton {
    *
 	 * @param name  the table name
 	**/
-	public function register_table($name) {
+	public static function register_table($name) {
     $prefix= (isset($GLOBALS['db_connection']['prefix']) ? $GLOBALS['db_connection']['prefix'] : '');
 		DB::instance()->sql_tables[$name]= $prefix . $name;
   }
@@ -132,7 +132,7 @@ class DB extends Singleton {
 	 * @param class_name  (optional) name of class name to wrangle returned data to
 	 * @return bool	 
 	 */	 	 	 	 	
-	public function query($query, $args = array(), $class_name = 'QueryRecord') {
+	public static function query($query, $args = array(), $class_name = 'QueryRecord') {
     /* Local scope caching */
     $pdo= DB::instance()->pdo;
     $pdo_statement= DB::instance()->pdo_statement;
@@ -174,9 +174,9 @@ class DB extends Singleton {
    * @param   procedure   name of the stored procedure
    * @param   args        arguments for the procedure
    * @return  mixed       whatever the procedure returns...
-   * 
+   * @experimental 
    */
-  public function execute_procedure($procedure, $args= array()) {
+  public static function execute_procedure($procedure, $args= array()) {
     /* Local scope caching */
     $pdo= DB::instance()->pdo;
     $pdo_statement= DB::instance()->pdo_statement;
@@ -238,6 +238,42 @@ class DB extends Singleton {
 	}
 
   /**
+   * Start a transaction against the RDBMS in order to wrap multiple
+   * statements in a safe ACID-compliant container
+   */
+  public static function begin_transaction() {
+    $pdo= DB::instance()->pdo;
+    if ($pdo == NULL)
+      DB::connect();
+
+    $pdo->beginTransaction();
+  }
+
+  /**
+   * Rolls a currently running transaction back to the 
+   * prexisting state, or, if the RDBMS supports it, whenever
+   * a savepoint was committed.
+   */
+  public static function rollback() {
+    $pdo= DB::instance()->pdo;
+    if ($pdo == NULL)
+      DB::connect();
+
+    $pdo->rollBack();
+  }
+
+  /**
+   * Commit a currently running transaction
+   */
+  public static function commit() {
+    $pdo= DB::instance()->pdo;
+    if ($pdo == NULL)
+      DB::connect();
+
+    $pdo->commit();
+  }
+
+  /**
    * Returns query profiles
    *
    * @return  array an array of query profiles
@@ -259,7 +295,7 @@ class DB extends Singleton {
 	 * @return boolean True if there were errors, false if not
 	 **/	 	 	 	
 	public function has_errors() {
-		return ( count(DB::instance()->errors) > 0);
+		return (count(DB::instance()->errors) > 0);
 	}
 	
 	/**

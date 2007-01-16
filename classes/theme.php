@@ -26,6 +26,7 @@ class Theme {
    * 
    * @param name            (optional) override the default theme lookup
    * @param template_engine (optional) specify a template engine
+   * @param theme_dir       (optional) specify a theme directory
 	 */	 	 	 	 	
 	public function __construct() {
     if (func_num_args() > 0) {
@@ -34,12 +35,13 @@ class Theme {
        * want to use a pre-installed theme (for instance, the
        * installer theme.)
        */
-      if (func_num_args() == 2) {
+      if (func_num_args() >= 2) {
         /* we load template engine from specified args, not DB */
         $this->name= func_get_arg(0);
         $template_engine= func_get_arg(1);
-        $this->template_engine= new $template_engine();
         $directory= HABARI_PATH . '/themes/' . $this->name . '/';
+        $directory= (func_num_args()==3 ? func_get_arg(2) : $directory);
+        $this->template_engine= new $template_engine();
         $this->template_engine->set_template_dir($directory);
         return;
       }
