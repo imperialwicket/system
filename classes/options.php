@@ -95,7 +95,7 @@ class Options
 	public function __get($name)
 	{
 		if(!isset($this->options[$name])) {
-			$result = DB::get_row('SELECT value, type FROM ' . DB::o()->options . ' WHERE name = ?', array($name));
+			$result = DB::get_row('SELECT value, type FROM ' . DB::table('options') . ' WHERE name = ?', array($name));
 			if ( Error::is_error( $result ) ) {
 				$result->out();
 				die();
@@ -128,10 +128,10 @@ class Options
 		$this->options[$name] = $value;
 		
 		if(is_array($value) || is_object($value)) {
-			$result = DB::update( DB::o()->options, array('name'=>$name, 'value'=>serialize($value), 'type'=>1), array('name'=>$name) ); 
+			$result = DB::update( DB::table('options'), array('name'=>$name, 'value'=>serialize($value), 'type'=>1), array('name'=>$name) ); 
 		}
 		else {
-			$result = DB::update( DB::o()->options, array('name'=>$name, 'value'=>$value, 'type'=>0), array('name'=>$name) ); 
+			$result = DB::update( DB::table('options'), array('name'=>$name, 'value'=>$value, 'type'=>0), array('name'=>$name) ); 
 		}
 		if( Error::is_error($result) ) {
 			$result->out();

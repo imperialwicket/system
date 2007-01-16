@@ -6,14 +6,10 @@
  * @package Habari
  */
 
-class Installer
-{
+class Installer {
 
-	static function is_installed()
-	{
-		DB::get_row('SELECT * FROM ' . DB::o()->options . ' LIMIT 1;');
-		DB::clear_errors();
-		return DB::o()->queryok;
+	static function is_installed() {
+		return DB::query('SELECT * FROM ' . DB::table('options') . ' LIMIT 1;');
 	}
 	
 	/**

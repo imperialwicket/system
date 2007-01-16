@@ -12,7 +12,6 @@
  */
 abstract class TemplateEngine
 {
-	protected $template_file= null; // file upon which the engine operates
   protected $template_dir= null; // directory where the template resides
   
   abstract function __construct(); // virtual - implement in derived class

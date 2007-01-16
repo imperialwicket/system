@@ -9,11 +9,11 @@
  * which uses the Smarty templating system to handle display of template files
  *   
  */
-require(HABARI_PATH . '/3rdparty/smarty/Smarty.class.php')
-  or die('Attempted to use SmartyEngine without installing Smarty');
+require(HABARI_PATH . '/3rdparty/smarty/libs/Smarty.class.php');
+if (!defined('DEBUG'))
+  define('DEBUG', true); 
 
-class SmartyEngine extends TemplateEngine
-{
+class SmartyEngine extends TemplateEngine {
   private $smarty= null; // Actual Smarty template processor
 
   /**
@@ -24,8 +24,8 @@ class SmartyEngine extends TemplateEngine
   public function __construct() {
     $this->smarty= new Smarty();
     $this->smarty->compile_dir= HABARI_PATH . '/3rdparty/smarty/templates_c/';
-    $this->smarty->cache_dir= HABARI_PATH . '/3rdparty/smarty/cache/';
-    $this->smarty->plugins_dir= HABARI_PATH . '/3rdparty/smarty/plugins/';
+    $this->smarty->cache_dir= HABARI_PATH . '/3rdparty/smarty/cached/';
+    $this->smarty->plugins_dir= HABARI_PATH . '/3rdparty/smarty/libs/plugins/';
     $this->smarty->force_compile= DEBUG;
     $this->smarty->compile_check= DEBUG;
     $this->smarty->caching= !DEBUG;
@@ -45,7 +45,7 @@ class SmartyEngine extends TemplateEngine
      */
     // Set directory now to allow theme to load theme directory after contructor.
     $this->smarty->template_dir= $this->template_dir; 
-    $this->smarty->display($template);
+    $this->smarty->display($template . '.tpl');
   } 
 
   /** 
@@ -80,7 +80,7 @@ class SmartyEngine extends TemplateEngine
    * @param key name of variable
    * @param value value of variable
    */
-  public function append($key, $value) {
+  public function append($key, $value= "") {
     if ( ! is_array($key) )
       $this->smarty->assign($key, $value);
     else
