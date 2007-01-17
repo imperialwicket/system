@@ -1,94 +1,110 @@
+/* tested on 2.8.17 and 3.3.6 */
+
 CREATE TABLE {$prefix}posts ( 
-	id INTEGER NOT NULL AUTOINCREMENT
+	id INTEGER PRIMARY KEY
 ,	slug VARCHAR(255) NOT NULL
-,	content_type SMALLINT UNSIGNED NOT NULL
+,	content_type INTEGER NOT NULL
 ,	title VARCHAR(255) NOT NULL
 ,	guid VARCHAR(255) NOT NULL
 ,	content LONGTEXT NOT NULL
-,	user_id SMALLINT UNSIGNED NOT NULL
-,	status SMALLINT UNSIGNED NOT NULL
-,	pubdate DATETIME NOT NULL 
+,	user_id SMALLINT NOT NULL
+,	status SMALLINT NOT NULL
+,	pubdate TIMESTAMP NOT NULL 
 ,	updated TIMESTAMP NOT NULL
-, PRIMARY KEY (id)
-, UNIQUE (slug(80))
+, UNIQUE (slug)
 );
 
+
 CREATE TABLE  {$prefix}postinfo  ( 
-	post_id INT UNSIGNED NOT NULL
+	post_id INTEGER NOT NULL
 ,	name VARCHAR(50) NOT NULL
-,	type SMALLINT UNSIGNED NOT NULL DEFAULT 0
+,	type SMALLINT NOT NULL DEFAULT 0
 ,	value TEXT
 , PRIMARY KEY (post_id, name)
 );
 
+
 CREATE TABLE  {$prefix}posttype ( 
 	name VARCHAR(255) NOT NULL 
-,	type SMALLINT UNSIGNED NOT NULL DEFAULT 0
+,	type SMALLINT NOT NULL DEFAULT 0
 , PRIMARY KEY (name)
 );
 
-INSERT INTO  {$prefix}posttype VALUES
-("entry", 0),
-("page", 1);
+
+INSERT INTO  {$prefix}posttype VALUES ("entry", 0);
+
+
+INSERT INTO  {$prefix}posttype VALUES ("page", 1);
+
 
 CREATE TABLE  {$prefix}poststatus ( 
 	name VARCHAR(255) NOT NULL 
-,	type SMALLINT UNSIGNED NOT NULL DEFAULT 0
+,	type SMALLINT NOT NULL DEFAULT 0
 , PRIMARY KEY (name)
 );
 
-INSERT INTO  {$prefix}poststatus VALUES
-("draft", 0),
-("published", 1), 
-("private", 1);
+
+INSERT INTO  {$prefix}poststatus VALUES ("draft", 0);
+
+
+INSERT INTO  {$prefix}poststatus VALUES ("published", 1);
+
+
+INSERT INTO  {$prefix}poststatus VALUES ("private", 1);
+
 
 CREATE TABLE  {$prefix}options (
 	name VARCHAR(50) NOT NULL
-,	type SMALLINT UNSIGNED NOT NULL DEFAULT 0
+,	type SMALLINT NOT NULL DEFAULT 0
 ,	value TEXT
 , PRIMARY KEY (name)
 );
 
+
 CREATE TABLE  {$prefix}users (
-	id SMALLINT UNSIGNED NOT NULL AUTOINCREMENT
+	id INTEGER PRIMARY KEY
 ,	username VARCHAR(20) NOT NULL
 ,	email VARCHAR(30) NOT NULL
 ,	password VARCHAR(40) NOT NULL
-, PRIMARY KEY (id)
 , UNIQUE (username)
 );
 
+
 CREATE TABLE  {$prefix}userinfo ( 
-	user_id SMALLINT UNSIGNED NOT NULL
+	user_id INTEGER NOT NULL
 ,	name VARCHAR(50) NOT NULL
-,	type SMALLINT UNSIGNED NOT NULL DEFAULT 0
+,	type SMALLINT NOT NULL DEFAULT 0
 ,	value TEXT
 , PRIMARY KEY (user_id, name)
 );
 
+
 CREATE TABLE  {$prefix}tags (
-  id INT UNSIGNED NOT NULL AUTOINCREMENT
+  id INTEGER PRIMARY KEY
 , tag_text VARCHAR(50) NOT NULL
-, PRIMARY KEY (id)
 , UNIQUE (tag_text)	
 );
 
+
 CREATE TABLE  {$prefix}tag2post (
-  tag_id INT UNSIGNED NOT NULL
-, post_id INT UNSIGNED NOT NULL
+  tag_id INTEGER  NOT NULL
+, post_id INTEGER NOT NULL
 , PRIMARY KEY (tag_id, post_id)
-, INDEX (post_id)
 );
 
+
+CREATE INDEX idx_tag2post_post_id on {$prefix}tag2post (post_id);
+
+
 CREATE TABLE  {$prefix}themes (
-  id SMALLINT UNSIGNED NOT NULL AUTOINCREMENT
+  id INTEGER PRIMARY KEY
 , name VARCHAR(80) NOT NULL
 , version VARCHAR(10) NOT NULL
 , template_engine VARCHAR(40) NOT NULL
 , theme_dir VARCHAR(255) NOT NULL
-, is_active TINYINT UNSIGNED NOT NULL DEFAULT 0
-, PRIMARY KEY (id)
+, is_active SMALLINT NOT NULL DEFAULT 0
 );
+
 
 INSERT INTO  {$prefix}themes (
   id
@@ -106,25 +122,28 @@ INSERT INTO  {$prefix}themes (
 , 1
 );
 
+
 CREATE TABLE  {$prefix}comments (
-	id INT UNSIGNED NOT NULL AUTOINCREMENT
-,	post_id INT UNSIGNED NOT NULL
+	id INTEGER PRIMARY KEY
+,	post_id INTEGER NOT NULL
 ,	name VARCHAR(100) NOT NULL
 ,	email VARCHAR(100) NOT NULL
 ,	url VARCHAR(255) NULL
-,	ip INT UNSIGNED NOT NULL
+,	ip INTEGER NOT NULL
 ,	content TEXT
-,	status TINYINT UNSIGNED NOT NULL
+,	status SMALLINT NOT NULL
 ,	date TIMESTAMP NOT NULL
-,	type SMALLINT UNSIGNED NOT NULL
-, PRIMARY KEY (id)
-, INDEX (post_id)
+,	type SMALLINT NOT NULL
 );
 
+
+CREATE INDEX idx_comments_post_id on {$prefix}comments (post_id);
+
+
 CREATE TABLE  {$prefix}commentinfo ( 
-	comment_id INT UNSIGNED NOT NULL
+	comment_id INTEGER NOT NULL
 ,	name VARCHAR(50) NOT NULL
-,	type SMALLINT UNSIGNED NOT NULL DEFAULT 0
+,	type SMALLINT NOT NULL DEFAULT 0
 ,	value TEXT NULL
 , PRIMARY KEY (comment_id, name)
 );
