@@ -5,6 +5,7 @@
  * Requires PHP 5.0.4 or later
  * @package Habari
  */
+define('SLUG_POSTFIX', '-');
 
 class Post extends QueryRecord
 {
@@ -35,7 +36,7 @@ class Post extends QueryRecord
 			'user_id' => '',
 			'status' => self::STATUS_DRAFT,
 			'pubdate' => date( 'Y-m-d H:i:s' ),
-			'updated' => ( 'Y-m-d H:i:s' ),
+			'updated' => date ( 'Y-m-d H:i:s' ),
       'content_type' => 0
 		);
 	}
@@ -107,9 +108,57 @@ class Post extends QueryRecord
 		return $post;
 	}
 
+  /**
+   * New slug setter.  Using different function name to test an alternate
+   * algorithm.
+   *
+   * The method both sets the internal slug and returns the 
+   * generated slug.
+   *
+   * @return  string  Generated slug
+   */
+  private function set_slug() {
+    /* 
+     * Do we already have a slug in for the post?
+     * If so, double check we haven't changed the slug
+     * manually by setting newfields['slug']
+     */
+    $old_slug= strtolower($this->fields['slug']);
+    $new_slug= strtolower((isset($this->newfields['slug']) ? $this->newfields['slug'] : ''));
+
+    if (! empty($old_slug)) {
+      if ($old_slug == $new_slug)
+        return $new_slug;
+    }
+  
+    /* 
+     * OK, we have a new slug or no slug at all
+     * For either case, we need to double check 
+     * that the slug doesn't already exist for another
+     * post in the DB.  But first, we must create
+     * a new slug if there isn't one set manually.
+     */
+    if (empty($new_slug)) {
+      /* Create a new slug from title */
+      $title= strtolower((isset($this->newfields['title']) ? $this->newfields['title'] : $this->fields['title']));
+      $new_slug= preg_replace('/[^a-z0-9]+/i', SLUG_POSTFIX, $title);
+      $new_slug= rtrim($new_slug, SLUG_POSTFIX);
+    }
+
+    /*
+     * Check for an existing post with the same slug.
+     * To do so, we cut off any postfixes from the new slug
+     * and check the DB for the slug without postfixes
+     */
+    $check_slug= rtrim($new_slug, SLUG_POSTFIX);
+    $sql= "SELECT COUNT(*) as slug_count FROM " . DB::table('posts') . " WHERE slug LIKE '" . $check_slug . "%';";
+    $num_posts= DB::get_value($sql);
+    $valid_slug= $check_slug . str_repeat(SLUG_POSTFIX, $num_posts);
+    $this->newfields['slug']= $valid_slug;
+    return $valid_slug;
+  }
 	
 	/**
-	 * function setslug
 	 * Attempts to generate the slug for a post that has none
 	 * @return The slug value	 
 	 */	 	 	 	 	
@@ -138,7 +187,9 @@ class Post extends QueryRecord
 		$postfix = '';
 		$postfixcount = 0;
 		do {
-			$slugcount = DB::get_row( 'SELECT count(slug) AS ct FROM ' . DB::o()->posts . ' WHERE slug = ?;', array( "{$slug}{$postfix}" ) );
+			if (! $slugcount = DB::get_row( 'SELECT count(slug) AS ct FROM ' . DB::table('posts') . ' WHERE slug = ?;', array( "{$slug}{$postfix}" ) )) {
+        print_r(DB::instance());exit;
+      }
 			if ( $slugcount->ct != 0 ) $postfix = "-" . ( ++$postfixcount );
 		} while ($slugcount->ct != 0);
 		$this->newfields[ 'slug' ] = $slug . $postfix;
@@ -180,9 +231,9 @@ class Post extends QueryRecord
 	private function savetags()
 	{
     if ( count($this->tags) == 0) {return;}
-		DB::query( 'DELETE FROM ' . DB::o()->tag2post . ' WHERE  = ?', array( $this->fields['slug'] ) );
+		DB::query( 'DELETE FROM ' . DB::table('tag2post') . ' WHERE  = ?', array( $this->fields['slug'] ) );
 		foreach( (array)$this->tags as $tag ) { 
-			DB::query( 'INSERT INTO ' . DB::o()->tag2post . ' (slug, tag) VALUES (?,?)', 
+			DB::query( 'INSERT INTO ' . DB::table('tag2post') . ' (slug, tag) VALUES (?,?)', 
 				array( $this->fields['slug'], $tag ) 
 			); 
 		}
@@ -195,9 +246,9 @@ class Post extends QueryRecord
 	public function insert()
 	{
 		$this->newfields[ 'updated' ] = date( 'Y-m-d h:i:s' );
-		$this->setslug();
+		$this->set_slug();
 		$this->setguid();
-		$result = parent::insert( DB::o()->posts );
+		$result = parent::insert( DB::table('posts') );
 		$this->fields = array_merge($this->fields, $this->newfields);
 		$this->newfields = array();
 		$this->savetags();
@@ -213,7 +264,7 @@ class Post extends QueryRecord
 		$this->updated = date('Y-m-d h:i:s');
 		if(isset($this->fields['guid'])) unset( $this->newfields['guid'] );
 		//$this->setslug();  // setslug() for an update?  Hmm.  No?
-		$result = parent::update( DB::o()->posts, array('slug'=>$this->slug) );
+		$result = parent::update( DB::table('posts'), array('slug'=>$this->slug) );
 		$this->fields = array_merge($this->fields, $this->newfields);
 		$this->newfields = array();
 		$this->savetags();
@@ -226,7 +277,7 @@ class Post extends QueryRecord
 	 */	 	 	 	 	
 	public function delete()
 	{
-		return parent::delete( DB::o()->posts, array('slug'=>$this->slug) );
+		return parent::delete( DB::table('posts'), array('slug'=>$this->slug) );
 	}
 	
 	/**
@@ -326,7 +377,7 @@ class Post extends QueryRecord
 	{
 		$i = 0;
 		if ( empty( $this->tags ) ) {
-			$this->tags = DB::get_column( 'SELECT tag FROM ' . DB::o()->tags . ' WHERE slug = ? ', array( $this->fields['slug'] ) );
+			$this->tags = DB::get_column( 'SELECT tag FROM ' . DB::table('tags') . ' WHERE slug = ? ', array( $this->fields['slug'] ) );
 		}
 		return $this->tags;
 	}

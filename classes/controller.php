@@ -7,7 +7,7 @@
  * @package habari 
  */
 class Controller extends Singleton {
-  private $base_url= '';        // base url for site
+  public $base_url= '';        // base url for site
   private $stub= '';            // stub supplied by rewriter
   private $action= '';          // action name (string)
   private $handler= null;       // the action handler object
@@ -101,7 +101,7 @@ class Controller extends Singleton {
     $pattern_matches= array();
     foreach ($rules as $rule) {
       if ( 1 == preg_match(
-                $rule['parse_regex']
+                $rule->parse_regex
                 , $controller->stub
                 , $pattern_matches) ) {
 
@@ -154,65 +154,81 @@ class Controller extends Singleton {
     $rules['display_posts_at_page']= array(
         'parse_regex'=>'/^page\/([\d]+)[\/]{0,1}$/i'
       , 'build_str'=>'page/{$page}'
-      , 'action'=>'DisplayPosts'
+      , 'handler'=>'UserThemeHandler'
+      , 'action'=>'display_posts'
       , 'named_args'=>array('page')
     );
     $rules['display_posts_by_date']= array(
         'parse_regex'=>'/([1,2]{1}[\d]{3})\/([\d]{2})\/([\d]{2})[\/]{0,1}$/'
       , 'build_str'=>'{$year}/{$month}/{$day}'
+      , 'handler'=>'UserThemeHandler'
       , 'action'=>'DisplayPostsByDate'
       , 'named_args'=>array('year','month','day')
     );
     $rules['display_posts_by_month']= array(
         'parse_regex'=>'/([1,2]{1}[\d]{3})\/([\d]{2})[\/]{0,1}$/' 
       , 'build_str'=>'{$year}/{$month}'
+      , 'handler'=>'UserThemeHandler'
       , 'action'=>'DisplayPostsByMonth'
       , 'named_args'=>array('year','month')
     );
     $rules['display_posts_by_year']= array(
         'parse_regex'=>'/([1,2]{1}[\d]{3})[\/]{0,1}$/'
       , 'build_str'=>'{$year}'
+      , 'handler'=>'UserThemeHandler'
       , 'action'=>'DisplayPostsByYear'
       , 'named_args'=>array('year')
     );
     $rules['display_feed_by_type']= array(
         'parse_regex'=>'/^feed\/(atom|rs[sd])[\/]{0,1}$/i'
       , 'build_str'=>'feed/{$feed_type}'
+      , 'handler'=>'UserThemeHandler'
       , 'action'=>'DisplayFeed'
       , 'named_args'=>array('feed_type')
     );
     $rules['display_posts_by_tag']= array(
         'parse_regex'=>'/^tag\/([^\/]*)[\/]{0,1}$/i'
       , 'build_str'=>'tag/{$tag}'
+      , 'handler'=>'UserThemeHandler'
       , 'action'=>'DisplayPostsByTag'
       , 'named_args'=>array('tag')
     );
     $rules['display_admin_page']= array(
         'parse_regex'=>'/^admin\/([^\/]*)[\/]{0,1}$/i'
       , 'build_str'=>'admin/{$action}'
+      , 'handler'=>'UserThemeHandler'
       , 'action'=>'DisplayAdminPage'
       , 'named_args'=>array('action')
     );
     $rules['display_user_page']= array(
         'parse_regex'=>'/^user\/([^\/]*)[\/]{0,1}$/i'
       , 'build_str'=>'user/{$action}'
+      , 'handler'=>'UserThemeHandler'
       , 'action'=>'DisplayUserPage'
       , 'named_args'=>array('action')
     );
     $rules['display_posts_by_slug']= array(
         'parse_regex'=>'/([^\/]+)[\/]{0,1}$/i'
       , 'build_str'=>'{$slug}'
+      , 'handler'=>'UserThemeHandler'
       , 'action'=>'DisplayPostBySlug'
       , 'named_args'=>array('slug')
     );
     $rules['index']= array(
         'parse_regex'=>'//'
       , 'build_str'=>''
+      , 'handler'=>'UserThemeHandler'
       , 'action'=>'DisplayPosts'
       , 'named_args'=>array()
     );
-     
-    return $rules;
+    $rule_classes= array();
+    foreach ($rules as $key=>$rule) {
+      $current_rule= new RewriteRule();
+      foreach ($rule as $property=>$value)
+        $current_rule->$property= $value;
+      $rule_classes[]= $current_rule;
+    }
+    return $rule_classes;
   }
 }
 
@@ -223,7 +239,7 @@ class RewriteRule {
   public $name;                 // name of the rule
   public $parse_regex;          // regex expression for incoming matching
   public $build_str;            // string with optional placeholders for outputting URL
-  public $handler_class;        // name of action handler class
+  public $handler;        // name of action handler class
   public $action;               // name of action that handler should execute
   public $named_args= array();  //
 }

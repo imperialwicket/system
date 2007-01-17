@@ -63,6 +63,13 @@ class InstallHandler extends ActionHandler {
       $this->display('db_setup');
       return true;
     }
+
+    /*
+     * OK, config.php is written now, so we can redirect to
+     * the index.php page 
+     */
+    Utils::redirect('');
+    return true;
   }
 
   /**
@@ -126,9 +133,9 @@ class InstallHandler extends ActionHandler {
           return false;
         }
         /* Alright, we're in with root priveleges, so create the database and db user */
-        $create_queries= $this->get_create_schema_with_user($db_type, $db_schema, $db_host, $db_user, $db_pass);
+        $create_schema_queries= $this->get_create_schema_and_user_queries();
         DB::begin_transaction();
-        foreach ($create_queries as $query) {
+        foreach ($create_schema_queries as $query) {
           if (! DB::query($query)) {
             $error= DB::get_last_error();
             $this->theme->assign('form_errors', array('db_host'=>'Could not create schema...' . $error['message']));
@@ -136,13 +143,33 @@ class InstallHandler extends ActionHandler {
             return false;
           }
         }
+        
         /* OK, schema and user created.  Let's install the DB tables now. */ 
-        if (! $this->install_schema_tables()) {
-          $this->theme->assign('form_errors', array('db_schema', 'Could not create schema tables'));
+        $create_table_queries= $this->get_create_table_queries();
+        foreach ($create_table_queries as $query) {
+          if (! DB::query($query)) {
+            $error= DB::get_last_error();
+            $this->theme->assign('form_errors', array('db_host'=>'Could not create schema tables...' . $error['message']));
+            DB::rollback();
+            return false;
+          }
+        }
+        
+        /* Cool.  DB installed.  Let's setup the admin user now. */
+        if (! $this->create_admin_user()) {
+          $this->theme->assign('form_errors', array('admin_user'=>'Problem creating admin user.'));
+          DB::rollback();
+          return false;
+        }
+
+        /* OK, now we've got to write the config.php file */
+        if (! $this->write_config_file()) {
+          $this->theme->assign('form_errors', array('write_file'=>'Could not write config.php file...'));
           DB::rollback();
           return false;
         }
         DB::commit();
+        return true;
       }
     }
     else {
@@ -153,16 +180,68 @@ class InstallHandler extends ActionHandler {
   }
 
   /**
+   * Creates the administrator user from form information
+   *
+   * @return  bool  Creation successful?
+   */
+  private function create_admin_user() {
+    $admin_username= $this->handler_vars['admin_username'];
+    $admin_email= $this->handler_vars['admin_email'];
+    $admin_pass= $this->handler_vars['admin_pass'];
+    
+    $password= sha1($admin_pass);
+		$admin= new User(array (
+			'username'=>$admin_username,
+			'email'=>$admin_email,
+			'password'=>$password
+		));
+		$admin->insert();
+    /** @todo Why is the User an insert() call and Post a create() call? */
+		// Insert a post record
+		Post::create(array(
+			'title'=>'First Post',
+			'content'=>'This is my first post',
+			'user_id'=>1,
+			'status'=>1,
+		));
+		
+		// generate a random-ish number to use as the salt for
+		// a SHA1 hash that will serve as the unique identifier for
+		// this installation.  Also for use in cookies
+		$options->GUID = sha1(Controller::get_base_url() . Utils::nonce());
+    return true; 
+  }
+
+  /**
+   * Install schema tables from the respective RDBMS schema
+   */
+  private function get_create_table_queries() {
+    $table_prefix= $this->handler_vars['table_prefix'];
+    $db_type= $this->handler_vars['db_type'];
+    $db_schema= $this->handler_vars['db_schema'];
+
+    /* Grab the queries from the RDBMS schema file */
+    $file_path= HABARI_PATH . '/system/schema/schema.' . $db_type . '.sql';
+    $schema_sql= file_get_contents($file_path);
+    $schema_sql= str_replace('{$schema}',$db_schema, $schema_sql);
+    $schema_sql= str_replace('{$prefix}',$table_prefix, $schema_sql);
+
+    $queries= explode('\n\n', $schema_sql);
+    return $queries;
+  }
+
+  /**
    * Returns an RDMBS-specific CREATE SCHEMA plus user SQL expression(s)
-   * 
-   * @param db_type     type of RDMBS
-   * @param db_schema   name of database schema
-   * @param db_host     database server host
-   * @param db_user     db user name
-   * @param db_pass     db user pass
+   *
    * @return  string[]  array of SQL queries to execute
    */
-  private function get_create_schema_with_user($db_type, $db_schema, $db_host, $db_user, $db_pass) {
+  private function get_create_schema_and_user_queries() {
+    $db_host= $this->handler_vars['db_host'];
+    $db_type= $this->handler_vars['db_type'];
+    $db_schema= $this->handler_vars['db_schema'];
+    $db_user= $this->handler_vars['db_user'];
+    $db_pass= $this->handler_vars['db_pass'];
+    
     $queries= array();
     switch ($db_type) {
       case 'mysql':
@@ -179,9 +258,44 @@ class InstallHandler extends ActionHandler {
   /**
    * Writes the configuration file with the variables needed for 
    * initialization of the application
+   *
+   * @return  bool  Did the file get written?
    */
   private function write_config_file() {
-    //$file= fopen(HABARI_PATH . '/config.php', 'w');
+    $db_host= $this->handler_vars['db_host'];
+    $db_type= $this->handler_vars['db_type'];
+    $db_schema= $this->handler_vars['db_schema'];
+    $db_user= $this->handler_vars['db_user'];
+    $db_pass= $this->handler_vars['db_pass'];
+    $table_prefix= $this->handler_vars['table_prefix'];
+    
+    $placeholders= array(
+        '{$db_host}'
+      , '{$db_type}'
+      , '{$db_schema}'
+      , '{$db_user}'
+      , '{$db_pass}'
+      , '{$table_prefix}'
+    );
+
+    $replacements= array(
+        $db_host
+      , $db_type
+      , $db_schema
+      , $db_user
+      , $db_pass
+      , $table_prefix
+    );
+  
+    if (! ($file_contents= file_get_contents(HABARI_PATH . '/system/config.php.tpl'))) 
+      return false;
+    $file_contents= str_replace($placeholders, $replacements, $file_contents);
+    if ($file= fopen(HABARI_PATH . '/config.php', 'w')) {
+      if (fwrite($file, $file_contents, strlen($file_contents)))
+        fclose($file);  
+      return true;      
+    }
+    return false;
   }
 
   /**
@@ -195,7 +309,6 @@ class InstallHandler extends ActionHandler {
     $db_root_pass= $this->handler_vars['db_root_pass'];
     $db_host= $this->handler_vars['db_host'];
     $db_type= $this->handler_vars['db_type'];
-    $db_schema= $this->handler_vars['db_schema'];
 
     if (!empty($db_root_user) && empty($db_host)) {
       $this->theme->assign('form_errors', array('db_host'=>'Host is required.'));
@@ -203,7 +316,8 @@ class InstallHandler extends ActionHandler {
     }
     
     /* Create a PDO connection string based on the database type */
-    $connect_string= $db_type . ':host=' . $db_host . ';dbname=';// . $db_schema  
+    $connect_string= $db_type . ':host=' . $db_host . ';dbname=';
+
     /* Attempt to connect to the database host */
     return DB::connect($connect_string, $db_root_user, $db_root_pass);
   }

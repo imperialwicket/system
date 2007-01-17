@@ -17,7 +17,7 @@ class Locale
 	 * Sets the locale for the whole system
 	 * @param string A locale string such as 'en' or 'en_US'
 	 **/	 
-	public static function set($locale)
+	public static function set($locale='en')
 	{
 		self::$locale = $locale;
 		//self::load_domain('habari');

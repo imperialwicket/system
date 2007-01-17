@@ -5,11 +5,14 @@
  * Requires PHP 5.0.4 or later
  * @package Habari
  */
+if (!defined('DEBUG'))
+  define('DEBUG', true);
+
 class DB extends Singleton {
-  private $keep_profile= false;       // keep profiling and timing information?
+  private $keep_profile= DEBUG;       // keep profiling and timing information?
 	private $pdo= NULL;                 // handle to the PDO interface
 	private $pdo_statement= NULL;       // handle for a PDOStatement
-	private $sql_tables;                // an array of table names that Habari knows
+	private $sql_tables= array();       // an array of table names that Habari knows
   private $errors= array();           // an array of errors related to queries
   private $profiles= array();         // an array of query profiles
 
@@ -39,7 +42,7 @@ class DB extends Singleton {
     if ($db->pdo == NULL) 
       $db->connect();
 
-    $prefix= (isset($GLOBALS['db_connection']['prefix']) ? $GLOBALS['db_connection']['prefix'] : '');
+    $prefix= (isset($GLOBALS['db_connection']['table_prefix']) ? $GLOBALS['db_connection']['table_prefix'] : '');
     $db->sql_tables['posts']= $prefix . 'posts';
     $db->sql_tables['postinfo']= $prefix . 'postinfo';
     $db->sql_tables['posttype']= $prefix . 'posttype';
@@ -93,6 +96,7 @@ class DB extends Singleton {
        */
       if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) == 'mysql')
         $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+      DB::load_tables();
       return true;
     }
     catch (PDOException $e) {
@@ -121,7 +125,7 @@ class DB extends Singleton {
 	 * @param name  the table name
 	**/
 	public static function register_table($name) {
-    $prefix= (isset($GLOBALS['db_connection']['prefix']) ? $GLOBALS['db_connection']['prefix'] : '');
+    $prefix= (isset($GLOBALS['db_connection']['table_prefix']) ? $GLOBALS['db_connection']['table_prefix'] : '');
 		DB::instance()->sql_tables[$name]= $prefix . $name;
   }
 
@@ -145,7 +149,7 @@ class DB extends Singleton {
 		if($pdo_statement != NULL) 
       $pdo_statement->closeCursor();
 
-		if ($pdo_statement= $pdo->prepare($query)) {
+		if (DB::instance()->pdo_statement=  $pdo_statement= $pdo->prepare($query)) {
 			$pdo_statement->setFetchMode(PDO::FETCH_CLASS, $class_name, array());
       /* If we are profiling, then time the query */
       if (DB::instance()->keep_profile) {
@@ -158,7 +162,7 @@ class DB extends Singleton {
 			}
       if (DB::instance()->keep_profile) {
         $profile->stop();
-        DB::instance()->queries[]= $profile;
+        DB::instance()->profiles[]= $profile;
       }
       return true;
 		}
@@ -227,7 +231,7 @@ class DB extends Singleton {
 			}
       if (DB::instance()->keep_profile) {
         $profile->stop();
-        DB::instance()->queries[]= $profile;
+        DB::instance()->profiles[]= $profile;
       }
       return true;
 		}
@@ -331,19 +335,18 @@ class DB extends Singleton {
 	 * @return array An array of QueryRecord or the named class each containing the row data
 	 * <code>$ary = DB::get_results( 'SELECT * FROM tablename WHERE foo = ?', array('fieldvalue'), 'extendedQueryRecord' );</code>
 	 **/	 	 	 	 
-	public function get_results($query, $args = array(), $classname = '')
+	public function get_results($query, $args = array(), $classname = 'QueryRecord')
 	{
 		$o =& DB::o();
 		DB::instance()->query($query, $args, $classname);
 		if(DB::instance()->queryok) {
-			return DB::instance()->pdostatement->fetchAll();
+			return DB::instance()->pdo_statement->fetchAll();
 		}
 		else
 			return false;
 	}
 	
 	/**
-	 * function get_row
 	 * Returns a single row (the first in a multi-result set) object for a query
 	 * @param string The query to execute
 	 * @param array Arguments to pass for prepared statements
@@ -351,8 +354,7 @@ class DB extends Singleton {
 	 * @return object A QueryRecord or an instance of the named class containing the row data	 
 	 * <code>$obj = DB::get_row( 'SELECT * FROM tablename WHERE foo = ?', array('fieldvalue'), 'extendedQueryRecord' );</code>	 
 	 **/	 	 
-	public function get_row($query, $args = array(), $classname = '')
-	{
+	public function get_row($query, $args = array(), $classname = 'QueryRecord') {
 		if (DB::instance()->query($query, $args, $classname))
 			return DB::instance()->pdo_statement->fetch();
 		else
@@ -383,7 +385,7 @@ class DB extends Singleton {
 	**/
 	public function get_value( $query, $args = array() ) {
 		if (DB::instance()->query($query, $args)) {
-      $result= DB::instance()->pdostatement->fetch(PDO::FETCH_NUM);
+      $result= DB::instance()->pdo_statement->fetch(PDO::FETCH_NUM);
       return $result[0];
     }
 		else
@@ -421,7 +423,7 @@ class DB extends Singleton {
 	 * <code>DB::exists( 'mytable', array( 'fieldname' => 'value' ) );</code>	 
 	 **/	 
 	public function exists($table, $keyfieldvalues) {
-		$sql= "SELECT 1 as c FROM {$table} WHERE 1 ";
+		$qry= "SELECT 1 as c FROM {$table} WHERE 1 ";
 
 		$values = array();
 		foreach($keyfieldvalues as $keyfield => $keyvalue) {

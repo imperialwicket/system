@@ -57,7 +57,7 @@ class User extends QueryRecord
 				$userid = substr($_COOKIE[$cookie], 40);
 				$cookiepass = substr($_COOKIE[$cookie], 0, 40);
 				// now try to load this user from the database
-				$user = DB::get_row('SELECT * FROM ' . DB::o()->users . ' WHERE id = ?', array($userid), 'User');
+				$user = DB::get_row('SELECT * FROM ' . DB::table('users') . ' WHERE id = ?', array($userid), 'User');
 				if ( ! $user ) {
 					return false;
 				}
@@ -81,7 +81,7 @@ class User extends QueryRecord
 	 */	 	 	 	 	
 	public function insert()
 	{
-		return parent::insert( DB::o()->users );
+		return parent::insert( DB::table('users') );
 	}
 
 	/**
@@ -90,7 +90,7 @@ class User extends QueryRecord
 	 */	 	 	 	 	
 	public function update()
 	{
-		return parent::update( DB::o()->users, array( 'id' => $this->id ) );
+		return parent::update( DB::table('users'), array( 'id' => $this->id ) );
 	}
 
 	/**
@@ -99,7 +99,7 @@ class User extends QueryRecord
 	**/
 	public function delete()
 	{
-		return parent::delete( DB::o()->users, array( 'id' => $this->id ) );
+		return parent::delete( DB::table('users'), array( 'id' => $this->id ) );
 	}
 
 	/**
@@ -152,7 +152,7 @@ class User extends QueryRecord
 			// yes?  see if this email address has a username
 			$what = "email";
 		}
-		$user = DB::get_row( 'SELECT * FROM ' . DB::o()->users . " WHERE {$what} = ?", array( $who ), 'User' );
+		$user = DB::get_row( 'SELECT * FROM ' . DB::table('users') . " WHERE {$what} = ?", array( $who ), 'User' );
 		if ( ! $user ) {
 			self::$identity = null;
 			return false;
@@ -187,7 +187,7 @@ class User extends QueryRecord
 			// was an email address given?
 			$what = 'email';
 		}
-		$user = DB::get_row( 'SELECT * FROM ' . DB::o()->users . " WHERE {$what} = ?", array( $who ), 'User' );
+		$user = DB::get_row( 'SELECT * FROM ' . DB::table('users') . " WHERE {$what} = ?", array( $who ), 'User' );
 		if ( ! $user ) {
 			return false;
 		} else {
@@ -203,7 +203,7 @@ class User extends QueryRecord
 	
 	public static function get_all()
 	{
-		$list_users = DB::get_results( 'SELECT * FROM ' . DB::o()->users . ' ORDER BY ID DESC' );
+		$list_users = DB::get_results( 'SELECT * FROM ' . DB::table('users') . ' ORDER BY ID DESC' );
 			if ( is_array( $list_users ) ) {
 				return $list_users;
 			} else {

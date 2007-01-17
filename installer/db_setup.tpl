@@ -14,7 +14,7 @@
         <h1>Install <em>habari</em></h1>
       </div>
       <div id="page">
-        <form action="" method="post">
+        <form action="" method="post" autocomplete="off">
           <h2>Installation Method</h2>
           <p class="instructions">
           You can either install the habari database yourself (if you have appropriate permissions to do so), or
@@ -40,7 +40,7 @@
           </p>
           <div class="row">
             <label for="db_root_user">Username with SUPER privileges</label>
-            <input type="textbox" name="db_root_user" value="{$db_root_user}" size="30" maxlength="50" />
+            <input type="textbox" name="db_root_user" value="{$db_root_user|default:'root'}" size="30" maxlength="50" />
             {include file="form.error.tpl" Id="db_root_user"}
           </div>
           <div class="row">
@@ -49,9 +49,10 @@
             {include file="form.error.tpl" Id="db_root_pass"}
           </div>
           <h2>Database Information</h2>
+           {include file="form.error.tpl" Id="write_config"}
            <div class="row">
             <label for="db_type">Database Type</label>
-            <select name="db_type" value="{$db_type}">
+            <select name="db_type">
              <option selected="true" value="mysql">MySQL</option>
              <option value="sqlite">SQLite</option>
              <option value="pgsql">PostgreSQL</option>
@@ -60,12 +61,12 @@
            </div>
            <div class="row">
             <label for="db_host">Host (Server)</label>
-            <input type="textbox" name="db_host" value="{$db_host}" size="30" maxlength="50" />
+            <input type="textbox" name="db_host" value="{$db_host|default:'localhost'}" size="30" maxlength="50" />
             {include file="form.error.tpl" Id="db_host"}
           </div>
           <div class="row">
             <label for="db_user">Database User</label>
-            <input type="textbox" name="db_user" value="{$db_user}" size="30" maxlength="50" />
+            <input type="textbox" name="db_user" value="{$db_user|default:'habari'}" size="30" maxlength="50" />
             {include file="form.error.tpl" Id="db_user"}
           </div>
           <div class="row">
@@ -75,7 +76,7 @@
           </div>
           <div class="row">
             <label for="db_schema">Name of Database</label>
-            <input type="textbox" name="db_schema" value="{$db_schema}" size="30" maxlength="50" />
+            <input type="textbox" name="db_schema" value="{$db_schema|default:'habari'}" size="30" maxlength="50" />
             {include file="form.error.tpl" Id="db_schema"}
           </div>
           <div class="row">
@@ -83,6 +84,23 @@
             <input type="textbox" name="table_prefix" value="{$table_prefix}" size="30" maxlength="50" />
             {include file="form.error.tpl" Id="table_prefix"}
           </div>
+          <h2>Admin User Information</h2>
+          <div class="row">
+            <label for="admin_username">Username of Administrator</label>
+            <input type="textbox" name="admin_username" value="{$admin_username|default:'Admin'}" size="30" maxlength="50" />
+            {include file="form.error.tpl" Id="admin_username"}
+          </div>
+          <div class="row">
+            <label for="admin_email">Email of Administrator</label>
+            <input type="textbox" name="admin_email" value="{$admin_email|default:'admin@mydomain.com'}" size="30" maxlength="50" />
+            {include file="form.error.tpl" Id="admin_email"}
+          </div>
+          <div class="row">
+            <label for="admin_pass">Password for Administrator</label>
+            <input type="textbox" name="admin_pass" value="{$admin_pass}" size="30" maxlength="50" />
+            {include file="form.error.tpl" Id="admin_pass"}
+          </div>
+        
           <div style="clear: both;">
             <input type="submit" value="Install Habari" />
           </div>

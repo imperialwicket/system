@@ -4,7 +4,7 @@
  * classes
  */
 class Singleton {
-  static private $instance= NULL; // Single instance of class available.
+  static private $instances= array(); // Single instance of class available.
   
   /**
    * Returns the single shared static instance variable
@@ -15,10 +15,10 @@ class Singleton {
    * @return object instance
    */
   static public function instance($class) {
-    if (self::$instance == NULL) {
-      self::$instance= new $class();
+    if (! isset(self::$instances[$class])) {
+      self::$instances[$class]= new $class();
     }
-    return self::$instance;
+    return self::$instances[$class];
   }
 
   /** Prevent instance construction and cloning (copying of object instance) */

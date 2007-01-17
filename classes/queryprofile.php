@@ -43,8 +43,8 @@ class QueryProfile {
    * @return  int the number of microseconds since epoch.
    */
   static public function get_time_in_microseconds() {
-    list($sec, $ms)= explode('.', microtime(true));
-    return (1000*$sec + $ms);
+    list($usec, $sec)= explode(' ', microtime());
+    return ((float) (1000*$sec)  + $usec);
   }
   
 }
