@@ -68,7 +68,7 @@ class InstallHandler extends ActionHandler {
      * OK, config.php is written now, so we can redirect to
      * the index.php page 
      */
-    Utils::redirect('');
+    Utils::redirect('index.php');
     return true;
   }
 
@@ -104,6 +104,23 @@ class InstallHandler extends ActionHandler {
     $db_user= $this->handler_vars['db_user'];
     $db_pass= $this->handler_vars['db_pass'];
     
+    if (empty($db_user)) {
+      $this->theme->assign('form_errors', array('db_user'=>'User is required.'));
+      return false;
+    }
+    if (empty($db_pass)) {
+      $this->theme->assign('form_errors', array('db_pass'=>'Password is required.'));
+      return false;
+    }
+    if (empty($db_schema)) {
+      $this->theme->assign('form_errors', array('db_schema'=>'Name for database is required.'));
+      return false;
+    }
+    if (empty($db_host)) {
+      $this->theme->assign('form_errors', array('db_host'=>'Host is required.'));
+      return false;
+    }
+
     /* 
      * OK, user has choice to either install the database
      * via the super (administrator) user, /or/ install the 
@@ -120,18 +137,6 @@ class InstallHandler extends ActionHandler {
         return false;
       }
       else {
-        if (empty($db_user)) {
-          $this->theme->assign('form_errors', array('db_user'=>'User is required.'));
-          return false;
-        }
-        if (empty($db_pass)) {
-          $this->theme->assign('form_errors', array('db_pass'=>'Password is required.'));
-          return false;
-        }
-        if (empty($db_schema)) {
-          $this->theme->assign('form_errors', array('db_schema'=>'Name for database is required.'));
-          return false;
-        }
         /* Alright, we're in with root priveleges, so create the database and db user */
         $create_schema_queries= $this->get_create_schema_and_user_queries();
         DB::begin_transaction();
@@ -143,7 +148,6 @@ class InstallHandler extends ActionHandler {
             return false;
           }
         }
-        
         /* OK, schema and user created.  Let's install the DB tables now. */ 
         $create_table_queries= $this->get_create_table_queries();
         foreach ($create_table_queries as $query) {
@@ -154,29 +158,73 @@ class InstallHandler extends ActionHandler {
             return false;
           }
         }
-        
-        /* Cool.  DB installed.  Let's setup the admin user now. */
-        if (! $this->create_admin_user()) {
-          $this->theme->assign('form_errors', array('admin_user'=>'Problem creating admin user.'));
-          DB::rollback();
-          return false;
-        }
-
-        /* OK, now we've got to write the config.php file */
-        if (! $this->write_config_file()) {
-          $this->theme->assign('form_errors', array('write_file'=>'Could not write config.php file...'));
-          DB::rollback();
-          return false;
-        }
-        DB::commit();
-        return true;
       }
     }
     else {
-      /* OK, user is saying that the database is already created.  Let's check */
-      if (! $this->check_db_credentials())
+      /* OK, user is saying that the database is already created.  Let's double check, eh? */
+      if (! $this->check_db_credentials()) {
+        $this->theme->assign('form_errors', array('db_user'=>'Problem connecting to supplied database credentials'));
         return false;
+      }
+      else {
+        DB::begin_transaction();
+      }
     }
+
+    /* Cool.  DB installed.  Let's setup the admin user now. */
+    if (! $this->create_admin_user()) {
+      $this->theme->assign('form_errors', array('admin_user'=>'Problem creating admin user.'));
+      DB::rollback();
+      return false;
+    }
+
+    /* OK, now we've got to write the config.php file */
+    if (! $this->write_config_file()) {
+      $this->theme->assign('form_errors', array('write_file'=>'Could not write config.php file...'));
+      DB::rollback();
+      return false;
+    }
+    DB::commit();
+    return true;
+  }
+
+  /**
+   * Checks that the supplied root user is able to create
+   * a database and grant access to a database user
+   *
+   * @return  bool  Did the root user credentials check out?
+   */
+  private function check_root_db_credentials() {
+    $db_root_user= $this->handler_vars['db_root_user'];
+    $db_root_pass= $this->handler_vars['db_root_pass'];
+    $db_host= $this->handler_vars['db_host'];
+    $db_type= $this->handler_vars['db_type'];
+    
+    /* Create a PDO connection string based on the database type */
+    $connect_string= $db_type . ':host=' . $db_host . ';dbname=';
+
+    /* Attempt to connect to the database host */
+    return DB::connect($connect_string, $db_root_user, $db_root_pass);
+  }
+
+  /**
+   * Checks that there is a database matching the supplied 
+   * arguments.
+   *
+   * @return  bool  Database exists with credentials?
+   */
+  private function check_db_credentials() {
+    $db_user= $this->handler_vars['db_user'];
+    $db_pass= $this->handler_vars['db_pass'];
+    $db_host= $this->handler_vars['db_host'];
+    $db_type= $this->handler_vars['db_type'];
+    $db_schema= $this->handler_vars['db_schema'];
+    
+    /* Create a PDO connection string based on the database type */
+    $connect_string= $db_type . ':host=' . $db_host . ';dbname=' . $db_schema;
+
+    /* Attempt to connect to the database host */
+    return DB::connect($connect_string, $db_user, $db_pass);
   }
 
   /**
@@ -296,30 +344,6 @@ class InstallHandler extends ActionHandler {
       return true;      
     }
     return false;
-  }
-
-  /**
-   * Checks that the supplied root user is able to create
-   * a database and grant access to a database user
-   *
-   * @return  bool  Did the root user credentials check out?
-   */
-  private function check_root_db_credentials() {
-    $db_root_user= $this->handler_vars['db_root_user'];
-    $db_root_pass= $this->handler_vars['db_root_pass'];
-    $db_host= $this->handler_vars['db_host'];
-    $db_type= $this->handler_vars['db_type'];
-
-    if (!empty($db_root_user) && empty($db_host)) {
-      $this->theme->assign('form_errors', array('db_host'=>'Host is required.'));
-      return false;
-    }
-    
-    /* Create a PDO connection string based on the database type */
-    $connect_string= $db_type . ':host=' . $db_host . ';dbname=';
-
-    /* Attempt to connect to the database host */
-    return DB::connect($connect_string, $db_root_user, $db_root_pass);
   }
 }
 ?>
