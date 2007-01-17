@@ -148,16 +148,6 @@ class InstallHandler extends ActionHandler {
             return false;
           }
         }
-        /* OK, schema and user created.  Let's install the DB tables now. */ 
-        $create_table_queries= $this->get_create_table_queries();
-        foreach ($create_table_queries as $query) {
-          if (! DB::query($query)) {
-            $error= DB::get_last_error();
-            $this->theme->assign('form_errors', array('db_host'=>'Could not create schema tables...' . $error['message']));
-            DB::rollback();
-            return false;
-          }
-        }
       }
     }
     else {
@@ -170,6 +160,17 @@ class InstallHandler extends ActionHandler {
         DB::begin_transaction();
       }
     }
+
+        /* OK, schema and user created.  Let's install the DB tables now. */ 
+        $create_table_queries= $this->get_create_table_queries();
+        foreach ($create_table_queries as $query) {
+          if (! DB::query($query)) {
+            $error= DB::get_last_error();
+            $this->theme->assign('form_errors', array('db_host'=>'Could not create schema tables...' . $error['message']));
+            DB::rollback();
+            return false;
+          }
+        }
 
     /* Cool.  DB installed.  Let's setup the admin user now. */
     if (! $this->create_admin_user()) {
