@@ -11,7 +11,7 @@ class Installer
 
 	static function is_installed()
 	{
-		DB::get_row('SELECT * FROM ' . DB::o()->options . ' LIMIT 1;');
+		DB::get_row('SELECT * FROM {options} LIMIT 1;');
 		DB::clear_errors();
 		return DB::o()->queryok;
 	}
@@ -77,15 +77,19 @@ class Installer
 		// Create the default options
 		$options = Options::o();
 		
+		DB::query('INSERT INTO {sites} (hostname, base_url) VALUES (?, ?)', array($_SERVER['SERVER_NAME'], substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/') + 1)));
+		
 		$options->installed = true;
 		
 		$options->title = $_POST['title'];
 		$options->tagline = $_POST['tagline'];
 		$options->about = $_POST['about'];
-		$options->base_url = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/') + 1);
+		//$options->base_url = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/') + 1);
 		$options->theme_dir = 'k2';
 		$options->version = '0.1alpha';
 		$options->pagination = '5';
+		
+		$url = URL::create();
 
 		// insert a default admin user
 		$password = sha1($_POST['password']);

@@ -187,18 +187,18 @@ class Comments extends ArrayObject
 	}
 
 	/**
-	 * function by_slug
-	 * select all comments for a given post slug
-	 * @param string a post slug
+	 * function by_id
+	 * select all comments for a given post id
+	 * @param integer a post id
 	 * @return array array an array of Comment objects for the given post
 	**/
-	public function by_slug ( $slug = '' )
+	public function by_id ( $id = '' )
 	{
-		if ( ! $slug )
+		if ( ! $id )
 		{
 			return false;
 		}
-		return self::get( array( "post_slug" => $slug ) );
+		return self::get( array( "post_id" => $id ) );
 	}
 
 	/**
@@ -367,15 +367,15 @@ class Comments extends ArrayObject
 	}
 
 	/**
-	 * static count_by_slug
+	 * static count_by_id
 	 * returns the number of comments attached to the specified post
-	 * @param string a post slug
+	 * @param integer a post slug
 	 * @param mixed A comment status value, or FALSE to not filter on status (default: Comment::STATUS_APPROVED)
 	 * @return int a count of the comments attached to the specified post
 	**/
-	public static function count_by_slug( $slug = '', $status = Comment::STATUS_APPROVED )
+	public static function count_by_id( $id = 0, $status = Comment::STATUS_APPROVED )
 	{
-		$params = array( 'post_slug' => $slug, 'count' => 'id');
+		$params = array( 'post_id' => $id, 'count' => 'id');
 		if ( FALSE !== $status )
 		{
 			$params['status'] = $status;

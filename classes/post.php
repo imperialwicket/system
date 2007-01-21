@@ -44,6 +44,7 @@ class Post extends QueryRecord
 			'status' => self::STATUS_DRAFT,
 			'pubdate' => date( 'Y-m-d H:i:s' ),
 			'updated' => ( 'Y-m-d H:i:s' ),
+			'site_id' => URL::get_site()->id,
 		);
 	}
 
@@ -65,7 +66,11 @@ class Post extends QueryRecord
 			$this->tags = $this->parsetags($this->fields['tags']);
 			unset( $this->fields['tags'] );
 		}
-		$this->exclude_fields('id');
+		
+		$this->map(array(
+			'posts'=>array('content_type', 'title', 'guid', 'content', 'user_id', 'status', 'pubdate', 'updated'),
+			'postsite'=>array('post_id', 'site_id', 'slug'),
+		));
 	}
 	
 	/**
@@ -146,7 +151,7 @@ class Post extends QueryRecord
 		$postfix = '';
 		$postfixcount = 0;
 		do {
-			$slugcount = DB::get_row( 'SELECT count(slug) AS ct FROM ' . DB::o()->posts . ' WHERE slug = ?;', array( "{$slug}{$postfix}" ) );
+			$slugcount = DB::get_row( 'SELECT count(slug) AS ct FROM {postsite} WHERE slug = ?;', array( "{$slug}{$postfix}" ) );
 			if ( $slugcount->ct != 0 ) $postfix = "-" . ( ++$postfixcount );
 		} while ( $slugcount->ct != 0 );
 		$this->newfields[ 'slug' ]= $slug . $postfix;
@@ -189,10 +194,10 @@ class Post extends QueryRecord
 
 	private function savetags()
 	{
-		DB::query( 'DELETE FROM ' . DB::o()->tags . ' WHERE slug = ?', array( $this->fields['slug'] ) );
+		DB::query( 'DELETE FROM {tags} WHERE post_id = ?', array( $this->fields['id'] ) );
 		foreach( (array)$this->tags as $tag ) { 
-			DB::query( 'INSERT INTO ' . DB::o()->tags . ' (slug, tag) VALUES (?,?)', 
-				array( $this->fields['slug'], $tag ) 
+			DB::query( 'INSERT INTO {tags} (slug, tag) VALUES (?,?)', 
+				array( $this->fields['id'], $tag ) 
 			); 
 		}
 	}
@@ -206,7 +211,7 @@ class Post extends QueryRecord
 		$this->newfields[ 'updated' ] = date( 'Y-m-d h:i:s' );
 		$this->setslug();
 		$this->setguid();
-		$result= parent::insert( DB::o()->posts );
+		$result= parent::insert( 'posts' );
 		$status_changed = ( $this->fields['status'] != $this->newfields['status'] );
 		if($status_changed) {
 			$orig_status = $this->fields['status'];
@@ -371,7 +376,7 @@ class Post extends QueryRecord
 	 * Gets the tags for the post
 	 * @return &array A reference to the tags array for this post
 	 **/	 	 	 	
-	private function &get_tags()
+	private function get_tags()
 	{
 		$i = 0;
 		if ( empty( $this->tags ) ) {
@@ -385,11 +390,11 @@ class Post extends QueryRecord
 	 * Gets the comments for the post
 	 * @return &array A reference to the comments array for this post
 	**/
-	private function &get_comments()
+	private function get_comments()
 	{
 		if ( ! $this->comments )
 		{
-			$this->comments = Comments::by_slug( $this->slug );
+			$this->comments = Comments::by_id( $this->id );
 		}
 		return $this->comments;
 	}

@@ -124,7 +124,7 @@ class Options
 							$portpart= ":$port";
 						}
 						// use Utils::glue_url?
-						return "http://" . $this->hostname . $portpart . $this->base_url;
+						return "http://" . $this->hostname . $portpart . URL::get_site()->base_url;
 					case 'comments_require_id':
 						return FALSE;
 					case 'pingback_send':

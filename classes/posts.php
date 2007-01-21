@@ -60,8 +60,9 @@ class Posts extends ArrayObject
 		// what to select -- by default, everything
 		foreach ( Post::default_fields() as $field => $value )
 		{
-			$select .= ('' == $select) ? DB::o()->posts . ".$field" : ', ' . DB::o()->posts . ".$field";
+			$select .= ('' == $select) ? "$field" : ', ' . DB::o()->posts . ".$field";
 		}
+		$select = implode(', ', array_keys( Post::default_fields() ) );
 		// defaults
 		//$status = Post::STATUS_PUBLISHED;  // Default (unset) is now the same as Post::STATUS_ANY
 		$orderby = 'pubdate DESC';
@@ -106,7 +107,7 @@ class Posts extends ArrayObject
 					$params[] = $paramset['user_id'];
 				}
 				if ( isset( $paramset['tag'] ) ) {
-					$join .= ' JOIN ' . DB::o()->tags . ' ON ' . DB::o()->posts . '.slug = ' . DB::o()->tags . '.slug';
+					$join .= ' JOIN {tags} ON {posts}.slug = {tags}.slug';
 					// Need tag expression parser here.			
 					$where[] = 'tag = ?';
 					$params[] = $paramset['tag'];
@@ -132,6 +133,15 @@ class Posts extends ArrayObject
 			$fetch_fn = $fns[0];
 		}
 		
+		if ( isset( $site ) ) {
+			$sitewhere = " AND site_id = ? ";
+			$params[] = $site;
+		}
+		else {
+			$sitewhere = " AND site_id = ? ";
+			$params[] = URL::get_site()->id;
+		}
+		
 		// is a count being request?
 		if ( isset( $count ) ) {
 			$select = "COUNT($count)";
@@ -151,13 +161,14 @@ class Posts extends ArrayObject
 		SELECT 
 		' . $select . '
 		FROM 
-		' . DB::o()->posts .
-		' ' . $join . '
+			{posts}
+		' . $join . '
+		JOIN {postsite} ON ({posts}.id = {postsite}.post_id)
 		WHERE 
-			' . implode( " \nOR\n ", $wheres ) . "
+			(' . implode( " \nOR\n ", $wheres ) . ")
+			{$sitewhere}
 		ORDER BY 
 			{$orderby}{$limit}";
-//Utils::debug($fetch_fn, $query, $params);			
 		$results = DB::$fetch_fn( $query, $params, 'Post' );
 		if( Error::is_error( $results ) ) {
 			$results->out();

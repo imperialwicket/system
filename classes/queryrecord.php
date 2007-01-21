@@ -11,7 +11,7 @@ class QueryRecord
 {
 	protected $fields = array();  // Holds field values from db
 	protected $newfields = array(); // Holds updated field values to commit to db
-	protected $unsetfields = array(); // Holds field names to remove when committing to the db
+	protected $field_map = array(); // Holds an array of fields from each table that are to be written to that table
 	private $loaded = false;  // Set to true after the constructor executes, is false when PDO fills data fields
 	
 	/**
@@ -60,42 +60,35 @@ class QueryRecord
 	}
 
 	/**
-	* function exclude_fields
-	* Registers a (list of) fields(s) as being managed exclusively by the database.
-	* @param mixed A database field name (string) or an array of field names
-	*/
-	public function exclude_fields( $fields )
+	 * Sets the mapping of fields to specific tables during inserts and updates
+	 * 
+	 * @param array An array indexed by table of fields
+	 * <code>$record->map(array('post'=>array('content', 'title')));</code>
+	 */
+	public function map($map)
 	{
-		if(is_array($fields)) 
-		{
-			$this->unsetfields = array_flip($fields);
-		}
-		else
-		{
-			$this->unsetfields[$fields] = $fields;
-		}
-	}
+		$this->field_map = $map;
+	} 	 	 	 	 	
 
-	/**
-	* public function list_excluded_fields
-	* returns an array of fields that should not be included in any database insert operation
-	* @return array an array of field names
-	*/
-	public function list_excluded_fields()
-	{
-		return $this->unsetfields;
-	}
-	
 	/**
 	 * function insert
 	 * Inserts this record's fields as a new row
 	 * @param string Table to update
 	 * @return boolean True on success, false if not 
 	 **/	 
-	public function insert($table)
+	public function insert()
 	{
-		$merge =  array_merge($this->fields, $this->newfields);
-		return DB::insert($table, array_diff_key($merge, $this->unsetfields));
+		$insertid = false;
+		foreach($this->field_map as $table => $fields) {
+			$merge = array_merge($this->fields, $this->newfields);
+			$merge = array_intersect_key($merge, array_flip($fields));
+			if($insertid != false) {
+				$merge[$fields[0]] = $insertid;  // This is kind of kludgey
+			}
+			$result = DB::insert($table, $merge);
+			$insertid = DB::last_insert_id();
+		}
+		return $result;
 	}
 	
 	/**

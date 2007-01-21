@@ -1,78 +1,98 @@
 <?php
 $queries = array(
-'CREATE TABLE ' . DB::o()->posts . ' ( 
-	id smallint AUTO_INCREMENT NOT NULL UNIQUE,
-	slug VARCHAR(255) NOT NULL PRIMARY KEY,
-	content_type smallint,
-	title VARCHAR(255), 
-	guid VARCHAR(255) NOT NULL, 
-	content LONGTEXT, 
-	user_id smallint, 
-	status smallint,
-	pubdate TIMESTAMP, 
-	updated TIMESTAMP
-	);',
-'CREATE TABLE ' . DB::o()->postinfo . ' ( 
-	slug VARCHAR(255) NOT NULL,
-	name varchar(50) NOT NULL,
-	type smallint DEFAULT 0,
-	value text
-	);',
-'CREATE TABLE ' . DB::o()->posttype . ' ( 
-	name VARCHAR(255) NOT NULL PRIMARY KEY,
-	type smallint DEFAULT 0
-	);',
-'INSERT INTO ' . DB::o()->posttype . ' VALUES
+'CREATE TABLE {commentinfo} (
+  comment_id bigint(20) unsigned NOT NULL,
+  name varchar(50) NOT NULL,
+  type smallint(6) default \'0\',
+  value text 
+);',
+'CREATE TABLE {comments} (
+  id bigint(20) NOT NULL auto_increment,
+  post_id bigint(20) unsigned NOT NULL,
+  name varchar(255) default NULL,
+  email varchar(255) default NULL,
+  url varchar(255) default NULL,
+  ip varchar(255) default NULL,
+  content text ,
+  status int(11) default NULL,
+  date timestamp NOT NULL default CURRENT_TIMESTAMP,
+  type int(11) default NULL,
+  UNIQUE KEY id (id)
+);',
+'CREATE TABLE {options} (
+  site_id int(11) unsigned NOT NULL,
+  name varchar(50) NOT NULL,
+  type int(11) NOT NULL default \'0\',
+  value text 
+);',
+'CREATE TABLE {postinfo} (
+  post_id bigint(20) unsigned NOT NULL,
+  name varchar(50) NOT NULL,
+  type smallint(6) default \'0\',
+  value text 
+);',
+'CREATE TABLE {posts} (
+  id int(11) NOT NULL auto_increment,
+  content_type smallint(6) default NULL,
+  title varchar(255) default NULL,
+  guid varchar(255) NOT NULL,
+  content longtext ,
+  user_id smallint(6) default NULL,
+  status smallint(6) default NULL,
+  pubdate timestamp NOT NULL default CURRENT_TIMESTAMP,
+  updated timestamp NOT NULL default \'0000-00-00 00:00:00\',
+  PRIMARY KEY  (id),
+  UNIQUE KEY id (id)
+);',
+'CREATE TABLE {postsite} (
+  post_id int(11) NOT NULL,
+  site_id int(11) unsigned NOT NULL,
+  slug varchar(255) NOT NULL
+);',
+'CREATE TABLE {poststatus} (
+  name varchar(255) NOT NULL,
+  type smallint(6) default \'0\',
+  PRIMARY KEY  (name)
+);',
+'CREATE TABLE {posttype} (
+  name varchar(255) NOT NULL,
+  type smallint(6) default \'0\',
+  PRIMARY KEY  (name)
+);',
+'CREATE TABLE {sites} (
+  id int(11) unsigned NOT NULL auto_increment,
+  hostname varchar(255) default NULL,
+  base_url varchar(255) default NULL,
+  PRIMARY KEY  (id),
+  UNIQUE KEY id (id)
+);',
+'CREATE TABLE {tags} (
+  post_id bigint(20) unsigned NOT NULL,
+  tag varchar(30) NOT NULL,
+  KEY slug (post_id),
+  KEY tag (tag)
+);',
+'CREATE TABLE {userinfo} (
+  user_id varchar(255) NOT NULL,
+  name varchar(50) NOT NULL,
+  type smallint(6) default \'0\',
+  value text 
+);',
+'CREATE TABLE {users} (
+  id smallint(6) NOT NULL auto_increment,
+  username varchar(20) NOT NULL,
+  email varchar(30) NOT NULL,
+  password varchar(40) NOT NULL,
+  PRIMARY KEY  (username),
+  UNIQUE KEY id (id),
+  UNIQUE KEY username (username)
+);',
+'INSERT INTO {posttype} VALUES
 		(\'entry\', 0),
 		(\'page\', 1);',
-'CREATE TABLE ' . DB::o()->poststatus . ' ( 
-	name VARCHAR(255) NOT NULL PRIMARY KEY,
-	type smallint DEFAULT 0
-	);',
-'INSERT INTO ' . DB::o()->poststatus . ' VALUES
+'INSERT INTO {poststatus} VALUES
 		(\'draft\', 0),
 		(\'published\', 1), 
 		(\'private\', 1);',
-'CREATE TABLE ' . DB::o()->options . ' (
-	name varchar(50) PRIMARY KEY NOT NULL UNIQUE,
-	type integer DEFAULT 0,
-	value text
-	);',
-'CREATE TABLE ' . DB::o()->users . ' (
-	id smallint AUTO_INCREMENT NOT NULL UNIQUE,
-	username varchar(20) PRIMARY KEY NOT NULL UNIQUE,
-	email varchar(30) NOT NULL,
-	password varchar(40) NOT NULL
-	);',
-'CREATE TABLE ' . DB::o()->userinfo . ' ( 
-	user_id VARCHAR(255) NOT NULL,
-	name varchar(50) NOT NULL,
-	type smallint DEFAULT 0,
-	value text
-	);',
-'CREATE TABLE ' . DB::o()->tags . ' (
-	slug varchar(255) NOT NULL,
-	tag varchar(30) NOT NULL,
-	KEY slug (slug),
-	KEY tag (tag)
-);',
-'CREATE TABLE ' . DB::o()->comments . ' (
-	id int AUTO_INCREMENT NOT NULL UNIQUE,
-	post_slug varchar(255) NOT NULL,
-	name varchar(255),
-	email varchar(255),
-	url varchar(255),
-	ip varchar(255),
-	content text,
-	status int,
-	date TIMESTAMP,
-	type int
-);',
-'CREATE TABLE ' . DB::o()->commentinfo . ' ( 
-	comment_id VARCHAR(255) NOT NULL,
-	name varchar(50) NOT NULL,
-	type smallint DEFAULT 0,
-	value text
-	);',
 );
 ?>

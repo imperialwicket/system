@@ -20,6 +20,7 @@ class DB
 	private $queries = array(); // Array of executed queries
 	private $errormarker = 0; // Last cleared error index
 	private $tables; // an array of table names that Habari knows
+	private $tablequoted; // an array of {quoted} table names
 	public $queryok; // Boolean on last query success
 	public $prefix; // the database prefix for all tables
 
@@ -35,7 +36,7 @@ class DB
 		try {
 			$this->dbh = new PDO($connection_string, $user, $pass);
 			$this->prefix = $prefix;
-			foreach (array('posts', 'postinfo', 'poststatus', 'posttype', 'options', 'users', 'userinfo', 'tags', 'comments', 'commentinfo') as $table) {
+			foreach (array('posts', 'postinfo', 'poststatus', 'posttype', 'postsite', 'options', 'users', 'userinfo', 'tags', 'comments', 'commentinfo', 'sites') as $table) {
 				$this->tables[$table] = $this->prefix . $table;
 			}
 		}
@@ -125,6 +126,20 @@ class DB
 			$this->tables[$name] = $prefix . $name;
 		}
 	}
+	
+	/**
+	 * Replace instances of {table} in the query with the actual registered table name
+	 * 
+	 * @param string The query to search
+	 * @return string The query with the replaced table names
+	 */	 	  	 	 	
+	public function unfilter_tables( $qry )
+	{
+		if( empty($this->tablequoted) ) {
+			$this->tablequoted = array_map(create_function('$a', 'return \'{\'.$a.\'}\';'), array_keys($this->tables));
+		}
+		return str_replace($this->tablequoted, $this->tables, $qry);
+	}
 
 	/**
 	 * function query
@@ -138,6 +153,7 @@ class DB
 	{
 		$t = microtime(true);
 		$o =& DB::o();
+		$query = $o->unfilter_tables( $query );
 		if($o->pdostatement) $o->pdostatement->closeCursor();
 		$o->pdostatement = $o->dbh->prepare($query);
 		if($o->pdostatement) {
@@ -331,6 +347,10 @@ class DB
 	{
 		$o =& DB::o();
 		ksort($fieldvalues);
+		
+		if( isset($o->tables[$table]) ) {
+			$table = $o->tables[$table];
+		}
 
 		$query = "INSERT INTO {$table} (";
 		$comma = '';
@@ -356,6 +376,10 @@ class DB
 	public function exists($table, $keyfieldvalues)
 	{
 		$o =& DB::o();
+		if( isset($o->tables[$table]) ) {
+			$table = $o->tables[$table];
+		}
+
 		ksort($keyfieldvalues);
 		reset($keyfieldvalues);
 		$qry = "SELECT 1 as c FROM {$table} WHERE 1 ";
@@ -390,6 +414,10 @@ class DB
 	public function update($table, $fieldvalues, $keyfields)
 	{
 		$o =& DB::o();
+		if( isset($o->tables[$table]) ) {
+			$table = $o->tables[$table];
+		}
+
 		ksort($fieldvalues);
 		ksort($keyfields);
 		$keyfieldvalues = array();
@@ -440,6 +468,10 @@ class DB
 	public function delete( $table, $keyfields )
 	{
 		$o =& DB::o();
+		if( isset($o->tables[$table]) ) {
+			$table = $o->tables[$table];
+		}
+
 		ksort( $keyfields );
 		
 		$qry = "DELETE FROM {$table} WHERE 1 ";
@@ -461,14 +493,8 @@ class DB
 	 * @see     http://us2.php.net/manual/en/function.pdo-lastinsertid.php
 	*/
 	public function last_insert_id() {
-		if ( func_num_args() == 1 )
-		{
-			return $this->dbh->lastInsertId( func_get_arg( 0 ) );
-		}
-		else
-		{
-			return $this->dbh->lastInsertId();
-		}
+		$o =& DB::o();
+		return $o->dbh->lastInsertId();
 	}
 	
 	/**

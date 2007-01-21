@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head profile="http://gmpg.org/xfn/11">
 	<title>Habari Administration</title>
-	<link rel="stylesheet" type="text/css" media="screen" href="<?php Options::out('base_url'); ?>system/admin/admin.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="<?php Options::out('host_url'); ?>system/admin/admin.css" />
 	<script src="<?php Options::out('host_url'); ?>scripts/jquery.js" type="text/javascript"></script>
 	<script src="<?php Options::out('host_url'); ?>scripts/support.js" type="text/javascript"></script>
 	<script type="text/javascript">
@@ -37,7 +37,7 @@
 		<ol id="menu">
 			<?php $page = empty(URL::o()->settings['page']) ? 'overview' : URL::o()->settings['page']; ?>
 			<li class="menu-item" <?php echo ($page == 'overview') ? 'id="current-item"' : ''; ?>>
-				<a href="<?php Options::out('base_url'); ?>admin/" title="Overview of your site">Admin</a>
+				<a href="<?php URL::out('admin', 'page='); ?>" title="Overview of your site">Admin</a>
 				<ul class="menu-list">
 					<li><a href="<?php URL::out('admin', 'page=options'); ?>">Options</a></li>
 					<li><a href="<?php URL::out('admin', 'page=plugins'); ?>">Plugins</a></li>

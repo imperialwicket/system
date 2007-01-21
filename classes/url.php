@@ -16,6 +16,7 @@ class URL
 	public $handlerclass;  // The handler class of page that was requested
 	public $handleraction;  // The action to pass to the handler that was requested
 	private static $instance;  // Holds the singleton instance of this class
+	public $site = false;  // The site record representing the requested site 
 	
 	/**
 	 * constructor __construct
@@ -27,8 +28,18 @@ class URL
 	public function __construct( $url )
 	{
 		// Remove the front of the URL path, which isn't determinant for this class
-		// Keep the "stub"		
-		$base = parse_url( Options::get('base_url') );
+		// Keep the "stub"
+		$bases = DB::get_results('SELECT * FROM {sites} WHERE hostname = ? ORDER BY length(base_url);', array($_SERVER['SERVER_NAME']) );
+		foreach($bases as $onebase) {
+			if( strpos($url, $onebase->base_url) === 0 ) {
+				$this->site = $onebase;
+				break;
+			}
+		}
+		if(!$this->site) {
+			Error::raise(__('No site is registered to handle the incoming URL.'), E_USER_ERROR);
+		}
+		$base = parse_url( $this->site->base_url /*Options::get('base_url')*/ );
 		$stub = $url;
 		if ( $base[ 'path' ] != '' ) {
 			$stub = substr( $stub, strpos( $url, $base[ 'path' ] ) + strlen( $base[ 'path' ] ) );
@@ -189,7 +200,7 @@ class URL
 	 * function get
 	 * 	 
 	 * Returns a url for the specified resource.
-	 * May be called on an object, or statically if the $url global is set:
+	 * May be called on an object, or statically:
 	 * <code>
 	 * $foo = $url->get( 'tag', 'tag=my-tag' );
 	 * $foo = $url->get( 'tag', array( 'tag' => 'my-tag' ) );	  	 
@@ -205,21 +216,12 @@ class URL
 	 **/	 	 	 	  	 	 		
 	public function get( $pagetype, $paramarray = array(), $useall = true, $explicit = false )
 	{
-		global $url;
 		if ( $paramarray === false ) {
 			$useall = false;
 		}
-		$c = __CLASS__;
-		if ( isset( $this ) && $this instanceof $c ) {
-			// get() was called on an instance
-			$rules = $this->rules;
-			$gsettings = $this->settings;
-		}
-		else {
-			// get() was called statically
-			$rules = $url->rules;
-			$gsettings = $url->settings;
-		}
+		$o = URL::o();
+		$rules = $o->rules;
+		$gsettings = $o->settings;
 
 		$params = Utils::get_params($paramarray);
 		$params = str_replace(' ', '+', $params);
@@ -270,7 +272,7 @@ class URL
 				else {
 					$querystring = '';
 				}
-				return 'http://' . $_SERVER["HTTP_HOST"] . Utils::end_in_slash(Options::get('base_url')) . trim($output, '/') . $querystring;
+				return 'http://' . $_SERVER["HTTP_HOST"] . Utils::end_in_slash($o->site->base_url) . trim($output, '/') . $querystring;
 			}
 		}
 		return '#unknown';
@@ -289,27 +291,17 @@ class URL
 	 **/
 	public function get_url( $pagetype, $paramarray = array(), $useall = true, $explicit = false )
 	{
-		global $url;
 		if ( $paramarray === false ) {
 			$useall = false;
 		}
-		$c = __CLASS__;
-		if ( $this instanceof $c ) {
-			// get_url() was called on an instance
-			$out = $this->get( $pagetype, $paramarray, $useall, $explicit );
-		}
-		else {
-			// get_url() was called statically
-			$out = $url->get( $pagetype, $paramarray, $useall, $explicit );
-		}
-		return $out;
+		return URL::o()->get( $pagetype, $paramarray, $useall, $explicit );
 	}
 	
 	/**
 	 * function out
 	 * 	 
 	 * Shortcut to echo the result of $this->get()
-	 * May be called on an object, or statically if the $url global is set:
+	 * May be called on an object, or statically:
 	 * <code>
 	 * $url->out('admin');
 	 * URL::out('admin');
@@ -320,41 +312,62 @@ class URL
 	 **/
 	public function out( $pagetype, $paramarray = array(), $useall = true, $explicit = false )
 	{
-		global $url;
 		if ( $paramarray === false ) {
 			$useall = false;
 		}
-		$c = __CLASS__;
-		if ( $this instanceof $c ) {
-			// out() was called on an instance
-			$out = $this->get( $pagetype, $paramarray, $useall, $explicit );
-		}
-		else {
-			// out() was called statically
-			$out = $url->get( $pagetype, $paramarray, $useall, $explicit );
-		}
-		echo $out;
+		echo URL::o()->get( $pagetype, $paramarray, $useall, $explicit );
 	}
 	
 	/**
 	 * function o
 	 * 	 
-	 * Returns the global $url object instance, whether set or not.
+	 * Returns the static object instance, whether set or not.
 	 * Instead of declaring $url as global everywhere, you can call it like
 	 * this for shorthand:	 
 	 * <code>
 	 * URL::o()->get('admin')	 
 	 * </code>
 	 * 
-	 * URL::o() will return whatever the global $url is set to, even null if
-	 * $url is not set.	 	 	 
+	 * URL::o() will return whatever the static instance is set to, even null if
+	 * it is not set.	 	 	 
 	 * 	 	 
 	 * @return mixed The value of the global $url
 	 **/	 	 
 	public static function o()
 	{
-		global $url;
-		return $url;
+		if ( isset ($this) && get_class($this) == ((string)__CLASS__)) {
+			return $this;
+		}
+		return URL::$instance;
+	}
+
+
+	/**
+	 * function create
+	 * Creates an instance of the URL object for parsing URLs.	 
+	 * @param string The URL to parse
+	 * @return URL An instance of the URL class
+	 */	 	 	
+	static function create($url = '')
+	{
+		if( $url == '' ) {
+			$url = ( isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['SCRIPT_NAME'] . ( isset($_SERVER['PATH_INFO']) ? $_SERVER['PATH_INFO'] : '') . ( (isset($_SERVER['QUERY_STRING']) && ($_SERVER['QUERY_STRING'] != '')) ? '?' . $_SERVER['QUERY_STRING'] : ''));
+		}
+		if ( empty( self::$instance ) ) {
+			$c = __CLASS__;
+			self::$instance = new $c( $url );
+		}
+		return self::$instance;
+	}
+
+	/**
+	 * function get_site
+	 * Returns the row data about the current site
+	 * @returns QueryRecord Site row data
+	 */	 	 	 		
+	public static function get_site()
+	{
+		return self::o()->site;
 	}
 	
 	/**

@@ -28,7 +28,7 @@ class Comment extends QueryRecord
 	{
 		return array(
 			'id' => '',
-			'post_slug' => '',
+			'post_id' => '',
 			'name' => '',
 			'email' => '',
 			'url' => '',
@@ -52,7 +52,9 @@ class Comment extends QueryRecord
 			self::default_fields(),
 			$this->fields );
 		parent::__construct( $paramarray );
-		$this->exclude_fields('id');
+		$this->map( array(
+			'comments'=>array('post_id', 'name', 'email', 'url', 'ip', 'content', 'status', 'date', 'type'),
+		));
 	}
 	
 	/**
