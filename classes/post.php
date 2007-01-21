@@ -196,7 +196,7 @@ class Post extends QueryRecord
 	{
 		DB::query( 'DELETE FROM {tags} WHERE post_id = ?', array( $this->fields['id'] ) );
 		foreach( (array)$this->tags as $tag ) { 
-			DB::query( 'INSERT INTO {tags} (slug, tag) VALUES (?,?)', 
+			DB::query( 'INSERT INTO {tags} (post_id, tag) VALUES (?,?)', 
 				array( $this->fields['id'], $tag ) 
 			); 
 		}
@@ -380,7 +380,7 @@ class Post extends QueryRecord
 	{
 		$i = 0;
 		if ( empty( $this->tags ) ) {
-			$this->tags = DB::get_column( 'SELECT tag FROM ' . DB::o()->tags . ' WHERE slug = ? ', array( $this->fields['slug'] ) );
+			$this->tags = DB::get_column( 'SELECT tag FROM ' . DB::o()->tags . ' WHERE post_id = ? ', array( $this->fields['id'] ) );
 		}
 		return $this->tags;
 	}
