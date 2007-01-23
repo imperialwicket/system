@@ -228,11 +228,10 @@ class Comments extends ArrayObject
 	**/
 	public function only( $what = 'approved' )
 	{
-		if ( ! $this->sort[$what] )
-		{
+		if (! isset($this->sort[$what])) {
 			$this->sort_comments();
 		}
-		if ( ! is_array( $this->sort[$what] ) ) {
+		if (! isset($this->sort[$what]) || ! is_array( $this->sort[$what] ) ) {
 			$this->sort[$what] = array();
 		}
 		return $this->sort[$what];

@@ -63,7 +63,8 @@ class URLWriter extends Singleton {
       if (count($args) > 0) {
         $url.= '?';
         foreach ($args as $key=>$value)
-          $url .= $key . '=' . $value;
+          $url .= $key . '=' . $value . '&';
+        $url= rtrim($url, '&');
       }
       return Controller::get_base_url() . $url;
     }   

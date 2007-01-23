@@ -130,8 +130,8 @@ class UserThemeHandler extends ActionHandler {
       }
     }
     $posts= Posts::get(array('where'=>$where_filters));
-    
-    if (count($posts) == 1) {
+    if (count($posts) == 1 
+      && count($where_filters) > 0) {
       $this->handler_vars['post']= $posts[0];
       $template= 'post';
     }

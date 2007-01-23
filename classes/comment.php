@@ -26,7 +26,6 @@ class Comment extends QueryRecord
 	{
 		return array(
 			'id' => '',
-			'post_slug' => '',
 			'name' => '',
 			'email' => '',
 			'url' => '',
@@ -92,7 +91,7 @@ class Comment extends QueryRecord
 	 */	 	 	 	 	
 	public function insert()
 	{
-		$result = parent::insert( DB::o()->comments );
+		$result = parent::insert( DB::table('comments') );
 		$this->fields = array_merge($this->fields, $this->newfields);
 		$this->newfields = array();
 		return $result;
@@ -104,7 +103,7 @@ class Comment extends QueryRecord
 	 */	 	 	 	 	
 	public function update()
 	{
-		$result = parent::update( DB::o()->comments, array('id'=>$this->id) );
+		$result = parent::update( DB::table('comments'), array('id'=>$this->id) );
 		$this->fields = array_merge($this->fields, $this->newfields);
 		$this->newfields = array();
 		return $result;
@@ -116,7 +115,7 @@ class Comment extends QueryRecord
 	 */	 	 	 	 	
 	public function delete($id)
 	{
-		return parent::delete( DB::o()->comments, array('id'=>$id) );
+		return parent::delete( DB::table('comments'), array('id'=>$id) );
 	}
 	
 	/**
@@ -125,7 +124,7 @@ class Comment extends QueryRecord
 	*/
 	public function mass_delete()
 	{
-		return parent::delete( DB::o()->comments, array( 'status' => STATUS_UNAPPROVED ) );
+		return parent::delete( DB::table('comments'), array( 'status' => STATUS_UNAPPROVED ) );
 	}
 	
 	/**
