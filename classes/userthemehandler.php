@@ -130,9 +130,16 @@ class UserThemeHandler extends ActionHandler {
       }
     }
     $posts= Posts::get(array('where'=>$where_filters));
-    $this->handler_vars['posts']= $posts; // Automatically assigned to theme at display time.
-
-    $this->display('posts');
+    
+    if (count($posts) == 1) {
+      $this->handler_vars['post']= $posts[0];
+      $template= 'post';
+    }
+    else  {
+      $this->handler_vars['posts']= $posts; // Automatically assigned to theme at display time.
+      $template= 'posts';
+    }
+    $this->display($template);
     return true;
   }
 
