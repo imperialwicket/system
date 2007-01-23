@@ -9,12 +9,14 @@ if (!defined('DEBUG'))
   define('DEBUG', true);
 
 class DB extends Singleton {
-  private $keep_profile= DEBUG;       // keep profiling and timing information?
-	private $pdo= NULL;                 // handle to the PDO interface
-	private $pdo_statement= NULL;       // handle for a PDOStatement
-	private $sql_tables= array();       // an array of table names that Habari knows
-  private $errors= array();           // an array of errors related to queries
-  private $profiles= array();         // an array of query profiles
+  private $fetch_mode= PDO::FETCH_CLASS;          // PDO Fetch mode
+  private $fetch_class_name= 'QueryRecord';    // The default class name for fetching classes
+  private $keep_profile= DEBUG;                   // keep profiling and timing information?
+	private $pdo= NULL;                             // handle to the PDO interface
+	private $pdo_statement= NULL;                   // handle for a PDOStatement
+	private $sql_tables= array();                   // an array of table names that Habari knows
+  private $errors= array();                       // an array of errors related to queries
+  private $profiles= array();                     // an array of query profiles
 
   /**
    * Enables singleton working properly
@@ -56,6 +58,8 @@ class DB extends Singleton {
     $db->sql_tables['tag2post']= $prefix . 'tag2post';
     $db->sql_tables['themes']= $prefix . 'themes';
     $db->sql_tables['theme_vars']= $prefix . 'theme_vars';
+    $db->sql_tables['rewrite_rules']= $prefix . 'rewrite_rules';
+    $db->sql_tables['rewrite_rule_args']= $prefix . 'rewrite_rule_args';
   } 
 
   /** 
@@ -88,18 +92,25 @@ class DB extends Singleton {
       $db_pass= $GLOBALS['db_connection']['password'];
     }
     try {
-      DB::instance()->pdo= $pdo= new PDO($connect_string, $db_user, $db_pass);
+      if (! DB::instance()->pdo= new PDO($connect_string, $db_user, $db_pass)) {
+        /** @todo Use standard Error class */
+        print_r(DB::instance()->pdo->errorInfo());
+        exit;
+      }
+        
       /**
        * @note  MySQL has issues caching queries that use the internal prepared
        *        statement API (server-side); therefore, we use prepared statement
        *        emulation in PDO to bypass this performance problem
        */
-      if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) == 'mysql')
-        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+      if (DB::instance()->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) == 'mysql')
+        DB::instance()->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+      DB::instance()->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
       DB::load_tables();
       return true;
     }
     catch (PDOException $e) {
+      /** @todo Use standard Error class */
       echo $e->getMessage();
       return false;
     }
@@ -111,6 +122,8 @@ class DB extends Singleton {
    * @param table name of the table
    */
   public static function table($name) {
+    if (DB::instance()->pdo == NULL)
+      DB::instance()->load_tables();
     if (isset(DB::instance()->sql_tables[$name]))
       return DB::instance()->sql_tables[$name];
     else
@@ -129,6 +142,24 @@ class DB extends Singleton {
 		DB::instance()->sql_tables[$name]= $prefix . $name;
   }
 
+  /**
+   * Sets the fetch mode for return calls from PDOStatement
+   *
+   * @param mode  One of the PDO::FETCH_MODE integers
+   */
+  public static function set_fetch_mode($mode) {
+    DB::instance()->fetch_mode= $mode;
+  }
+
+  /**
+   * Sets the class to fetch, if fetch mode is PDO::FETCH_CLASS
+   *
+   * @param class_name  Name of class to create during fetch
+   */
+  public static function set_fetch_class($class_name) {
+    DB::instance()->fetch_class_name= $class_name;
+  }
+
 	/**
 	 * Queries the database for a given SQL command.
 	 * @param query       the SQL query text
@@ -136,38 +167,61 @@ class DB extends Singleton {
 	 * @param class_name  (optional) name of class name to wrangle returned data to
 	 * @return bool	 
 	 */	 	 	 	 	
-	public static function query($query, $args = array(), $class_name = 'QueryRecord') {
+	public static function query($query, $args = array()) {
     /* Local scope caching */
-    $pdo= DB::instance()->pdo;
-    $pdo_statement= DB::instance()->pdo_statement;
+    $db= DB::instance();
+    $pdo= $db->pdo;
 
     /* Auto-connect */
     if ($pdo == NULL)
-      if (DB::instance()->connect())
-        $pdo= DB::instance()->pdo;
+      if ($db->connect())
+        $pdo= $db->pdo;
 
-		if($pdo_statement != NULL) 
-      $pdo_statement->closeCursor();
+		if($db->pdo_statement != NULL) 
+      $db->pdo_statement->closeCursor();
 
-		if (DB::instance()->pdo_statement=  $pdo_statement= $pdo->prepare($query)) {
-			$pdo_statement->setFetchMode(PDO::FETCH_CLASS, $class_name, array());
+		if ($db->pdo_statement=  $pdo->prepare($query)) {
+      /**
+       * This section of code is EXTREMELY important, for the reasons I laid
+       * out on php.net: @see http://us2.php.net/manual/en/function.pdostatement-setfetchmode.php
+       *
+       * In summary, PDO will *core dump* if the fetch mode is PDO::FETCH_CLASS and the
+       * class supplied for instantiation is either a) not included, or b) included, but all
+       * related classes are not included.  This is very annoying behaviour, and something that
+       * took many hours to diagnose, as the core dump happens with no explanation as to the
+       * source of the segfault.
+       */
+      if ($db->fetch_mode == PDO::FETCH_CLASS) {
+        /* Ensure that the class is actually available and included already, otherwise segfault happens */
+        if (class_exists(strtolower($db->fetch_class_name))) {
+    			$db->pdo_statement->setFetchMode(PDO::FETCH_CLASS, $db->fetch_class_name, array());
+        }
+        else {
+          /* Die gracefully before the segfault occurs */
+          echo '<br /><br />Attempt to fetch in class mode with a non-included class<br /><br />';
+          return false;
+        }
+      }
+      else
+        $db->pdo_statement->setFetchMode($db->fetch_mode);
+
       /* If we are profiling, then time the query */
-      if (DB::instance()->keep_profile) {
+      if ($db->keep_profile) {
         $profile= new QueryProfile($query);
         $profile->start();
       }
-			if (! $pdo_statement->execute($args)) {
-				DB::add_error(array('query'=>$query,'error'=>$pdo_statement->errorInfo()));
+      if (! $db->pdo_statement->execute($args)) {
+				$db->add_error(array('query'=>$query,'error'=>$db->pdo_statement->errorInfo()));
 				return false;
 			}
-      if (DB::instance()->keep_profile) {
+      if ($db->keep_profile) {
         $profile->stop();
-        DB::instance()->profiles[]= $profile;
+        $db->profiles[]= $profile;
       }
       return true;
 		}
     else {
-  		DB::add_error(array('query'=>$query,'error'=>$pdo_statement->errorInfo()));
+  		$db->add_error(array('query'=>$query,'error'=>$pdo->errorInfo()));
   		return false;
     }
 	}
@@ -179,6 +233,7 @@ class DB extends Singleton {
    * @param   args        arguments for the procedure
    * @return  mixed       whatever the procedure returns...
    * @experimental 
+   * @todo  EVERYTHING... :)
    */
   public static function execute_procedure($procedure, $args= array()) {
     /* Local scope caching */
@@ -335,15 +390,17 @@ class DB extends Singleton {
 	 * @return array An array of QueryRecord or the named class each containing the row data
 	 * <code>$ary = DB::get_results( 'SELECT * FROM tablename WHERE foo = ?', array('fieldvalue'), 'extendedQueryRecord' );</code>
 	 **/	 	 	 	 
-	public function get_results($query, $args = array(), $classname = 'QueryRecord')
-	{
-		$o =& DB::o();
-		DB::instance()->query($query, $args, $classname);
-		if(DB::instance()->queryok) {
+	public function get_results($query, $args = array()) {
+    if (func_num_args() == 3) {
+      /* Called expecting specific class return type */
+      $class_name= func_get_arg(2);
+      DB::set_fetch_mode(PDO::FETCH_CLASS);
+      DB::set_fetch_class($class_name);
+    }
+		if (DB::instance()->query($query, $args))
 			return DB::instance()->pdo_statement->fetchAll();
-		}
 		else
-			return false;
+      return false;
 	}
 	
 	/**
@@ -354,8 +411,14 @@ class DB extends Singleton {
 	 * @return object A QueryRecord or an instance of the named class containing the row data	 
 	 * <code>$obj = DB::get_row( 'SELECT * FROM tablename WHERE foo = ?', array('fieldvalue'), 'extendedQueryRecord' );</code>	 
 	 **/	 	 
-	public function get_row($query, $args = array(), $classname = 'QueryRecord') {
-		if (DB::instance()->query($query, $args, $classname))
+	public function get_row($query, $args = array()) {
+    if (func_num_args() == 3) {
+      /* Called expecting specific class return type */
+      $class_name= func_get_arg(2);
+      DB::set_fetch_mode(PDO::FETCH_CLASS);
+      DB::set_fetch_class($class_name);
+    }
+    if (DB::instance()->query($query, $args))
 			return DB::instance()->pdo_statement->fetch();
 		else
 			return false;

@@ -5,7 +5,7 @@
  * 
  * @package Habari
  */
-static class URLWriter extends Singleton {
+class URLWriter extends Singleton {
   private $rules= null; // static collection of rules (pulled from RewriteController)
  
   /**
@@ -22,9 +22,9 @@ static class URLWriter extends Singleton {
    * A simple caching mechanism to avoid reloading rule array
    */
   private function load_rules() {
-    if (URLWriter::instance()->rules == NULL)
+    if (URLWriter::instance()->rules != NULL)
       return;
-    URLWriter::instance()->rules= Controller::get_rules();
+    URLWriter::instance()->rules= RewriteRules::get_active();
   }
 
   /** 
@@ -42,14 +42,30 @@ static class URLWriter extends Singleton {
    * @param rule  string identifier for the rule which would build the URL
    * @param args  (optional) array of placeholder replacement values
    */
-  static public function build_url($rule, $args= array()) {
-    URLWriter::instance()->load_rules();
-    if (isset(URLWriter::instance()->rules[$rule])) {
-      $url= $rule['build_str'];
-      foreach ($rule['named_args'] as $replace) {
+  static public function build_url($rule_name, $args= array()) {
+    $writer= URLWriter::instance();
+    $writer->load_rules();
+    if (isset($writer->rules[$rule_name])) {
+      $rule= $writer->rules[$rule_name];
+      $url= $rule->build_str;
+      foreach ($rule->named_args as $replace) {
         $url= str_replace('{$' . $replace . '}', $args[$replace], $url);
+        /* 
+         * Remove from the argument list so we can append 
+         * any outlier args as query string args
+         */
+        unset($args[$replace]);
       }
-      return Controller::get_base_url() . '/' . $url;
+      /*
+       * OK, now append any outliers passed in to the function
+       * as query string arguments
+       */
+      if (count($args) > 0) {
+        $url.= '?';
+        foreach ($args as $key=>$value)
+          $url .= $key . '=' . $value;
+      }
+      return Controller::get_base_url() . $url;
     }   
   }
 }

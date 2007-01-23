@@ -91,7 +91,7 @@ class Post extends QueryRecord
 			);
 		}
     //print_r($controller);
-		$paramarray = array_merge( $controller->action->settings, $defaults, Utils::get_params($paramarray) ); 
+		$paramarray = array_merge( $controller->handler->handler_vars, $defaults, Utils::get_params($paramarray) ); 
 		return Posts::get( $paramarray );
 	}
 	
@@ -373,12 +373,17 @@ class Post extends QueryRecord
 	 * Gets the tags for the post
 	 * @return &array A reference to the tags array for this post
 	 **/	 	 	 	
-	private function &get_tags()
-	{
-		$i = 0;
-		if ( empty( $this->tags ) ) {
-			$this->tags = DB::get_column( 'SELECT tag FROM ' . DB::table('tags') . ' WHERE slug = ? ', array( $this->fields['slug'] ) );
-		}
+	private function get_tags() {
+		if (empty($this->tags)) {
+      $sql= "SELECT t.tag_text
+             FROM " . DB::table('tags') . " t
+             INNER JOIN " . DB::table('tag2post') . " t2p 
+             ON t.id = t2p.tag_id
+             WHERE t2p.post_id = ?";
+			$this->tags = DB::get_column($sql, array( $this->fields['id'] ) );
+    }	
+    if (count($this->tags) == 0)
+      return '';
 		return $this->tags;
 	}
 
@@ -391,7 +396,7 @@ class Post extends QueryRecord
 	{
 		if ( ! $this->comments )
 		{
-			$this->comments = Comments::by_slug( $this->slug );
+			$this->comments = Comments::by_post_id( $this->id );
 		}
 		return $this->comments;
 	}

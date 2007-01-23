@@ -76,7 +76,7 @@ class Comments extends ArrayObject
 			}
 		}
 
-		$sql = "SELECT {$select} from " . DB::o()->comments . ' WHERE ' . implode( ' AND ', $where ) . " ORDER BY {$orderby}{$limit}";
+		$sql = "SELECT {$select} from " . DB::table('comments') . ' WHERE ' . implode( ' AND ', $where ) . " ORDER BY {$orderby}{$limit}";
 		$query = DB::$fetch_fn( $sql, $params, 'Comment' );
 		if ( 'get_value' == $fetch_fn )
 		{
@@ -147,6 +147,15 @@ class Comments extends ArrayObject
 			return false;
 		}
 		return self::get( array( "url" => $url ) );
+	}
+
+	/**
+	 * Returns all comments for a supplied post ID
+	 * @param post_id ID of the post
+	 * @return array  an array of Comment objects for the given post
+	**/
+	public function by_post_id($post_id) {
+		return self::get( array( "post_id" => $post_id ) );
 	}
 
 	/**

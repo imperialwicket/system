@@ -60,7 +60,7 @@ class Posts extends ArrayObject
 		// what to select -- by default, everything
 		foreach ( Post::default_fields() as $field => $value )
 		{
-			$select .= ('' == $select) ? DB::o()->posts . ".$field" : ', ' . DB::o()->posts . ".$field";
+			$select .= ('' == $select) ? DB::table('posts') . ".$field" : ', ' . DB::table('posts') . ".$field";
 		}
 		// defaults
 		//$status = Post::STATUS_PUBLISHED;  // Default (unset) is now the same as Post::STATUS_ANY
@@ -102,7 +102,7 @@ class Posts extends ArrayObject
 					$params[] = $paramset['user_id'];
 				}
 				if ( isset( $paramset['tag'] ) ) {
-					$join .= ' JOIN ' . DB::o()->tag2post . ' ON ' . DB::o()->posts . '.id = ' . DB::o()->tag2post . '.post_id';
+					$join .= ' JOIN ' . DB::table('tag2post') . ' ON ' . DB::table('posts') . '.id = ' . DB::table('tag2post') . '.post_id';
 					// Need tag expression parser here.			
 					$where[] = 'tag = ?';
 					$params[] = $paramset['tag'];
@@ -147,15 +147,19 @@ class Posts extends ArrayObject
 		SELECT 
 		' . $select . '
 		FROM 
-		' . DB::o()->posts .
-		' ' . $join . '
-		WHERE 
-			' . implode( " \nOR\n ", $wheres ) . "
+		' . DB::table('posts') .
+		' ' . $join;
+
+    if (count($wheres) > 0) 
+      $query.= ' WHERE ' . implode( " \nOR\n ", $wheres );
+    $query .= "
 		ORDER BY 
 			{$orderby}{$limit}";
 //Utils::debug($fetch_fn, $query, $params);			
+    DB::set_fetch_mode(PDO::FETCH_CLASS);
+    DB::set_fetch_class('Post');
 		$results = DB::$fetch_fn( $query, $params, 'Post' );
-	
+
 		if ( 'get_results' != $fetch_fn )
 		{
 			// return the results

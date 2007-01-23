@@ -10,8 +10,7 @@
  * implementation, see RawPHPEngine or SmartyEngine
  *   
  */
-abstract class TemplateEngine
-{
+abstract class TemplateEngine {
   protected $template_dir= null; // directory where the template resides
   
   abstract function __construct(); // virtual - implement in derived class

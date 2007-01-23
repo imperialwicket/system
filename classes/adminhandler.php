@@ -1,30 +1,23 @@
 <?php
-
 /**
  * Habari AdminHandler Class
  *
  * @package Habari
  */
-
-define('ADMIN_DIR', HABARI_PATH . '/system/admin/');
-
-class AdminHandler extends ActionHandler
-{
+class AdminHandler extends ActionHandler {
+  
+  private $theme= null;
 
 	/**
-	* constructor __construct
-	* verify that the page is being accessed by an admin
-	* @param string The action that was in the URL rule
-	* @param array An associative array of settings found in the URL by the URL
-	*/
-	public function __construct($action, $settings)
-	{
+	 * Verify that the page is being accessed by an admin, then create
+   * a theme to handle admin display.
+	 */
+	public function __construct() {
 		// check that the user is logged in, and redirect
 		// to the login page, if not
-		if (! User::identify() )
-		{
-			$settings['redirect'] = URL::get($action, $settings);
-			Utils::redirect( URL::get( 'login', $settings ) );
+		if (! User::identify()) {
+//			$this->handler_vars['redirect']= URL::get($action, $settings);
+			Utils::redirect(URLWriter::build_url('user', array('page'=>'login')));
 			exit;
 		}
 		
@@ -415,3 +408,4 @@ class AdminHandler extends ActionHandler
 		}
 	}
 ?>
+

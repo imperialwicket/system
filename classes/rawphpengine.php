@@ -9,8 +9,10 @@
  * which is intended for those theme designers who choose to use raw PHP
  * to design theme templates.
  */
-class RawPHPEngine extends TemplateEngine
-{
+class RawPHPEngine extends TemplateEngine {
+  
+  private $engine_vars= array();      // Internal data to be extracted into template symbol table
+
   /**
    * Constructor for RawPHPEngine
    * 
@@ -32,7 +34,7 @@ class RawPHPEngine extends TemplateEngine
      *        For instance, having sessions/headers output before
      *        the template content...
      */
-    extract($this->config_vars);
+    extract($this->engine_vars);
     if ( file_exists($this->template_dir . $template . '.php') )
       include ($this->template_dir . $template . '.php');
   }
@@ -58,7 +60,7 @@ class RawPHPEngine extends TemplateEngine
    * @param value value of variable
    */
   public function assign($key, $value= "") {
-    $this->config_vars[$key]= $value;
+    $this->engine_vars[$key]= $value;
   } 
 
   /** 
@@ -68,8 +70,8 @@ class RawPHPEngine extends TemplateEngine
    * @param value value of variable
    */
   public function append($key, $value="") {
-    if ( ! isset($this->config_vars[$key]) )
-      $this->config_vars[$key][]= $value;
+    if ( ! isset($this->engine_vars[$key]) )
+      $this->engine_vars[$key][]= $value;
     else
       $this->assign($key, $value);
   } 
