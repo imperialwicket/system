@@ -95,7 +95,7 @@ class Options
 	public function __get($name)
 	{
 		if(!isset($this->options[$name])) {
-			$result = DB::get_row('SELECT value, type FROM ' . DB::table('options') . ' WHERE name = ?', array($name));
+			$result = DB::get_row('SELECT value, type FROM ' . DB::table('options') . ' WHERE name = ?', array($name), 'QueryRecord');
 			if ( Error::is_error( $result ) ) {
 				$result->out();
 				die();

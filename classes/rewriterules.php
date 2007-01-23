@@ -6,8 +6,8 @@ class RewriteRules {
   static public function get_active() {
 
     $sql= "SELECT rr.rule_id, rr.name, rr.parse_regex, rr.build_str, rr.handler, rr.action, COUNT(*) as num_args
-          FROM " . DB::table('rewrite_rules') . " rr
-          LEFT JOIN " . DB::table('rewrite_rule_args') . " rra
+          FROM " . DB::table('rewrite_rules') . " AS rr
+          LEFT JOIN " . DB::table('rewrite_rule_args') . " AS rra
           ON rr.rule_id = rra.rule_id
           WHERE rr.is_active = 1
           GROUP BY rr.rule_id
@@ -38,8 +38,8 @@ class RewriteRules {
      */
     if (count($rules_with_args) > 0) {
       $sql= "SELECT rr.name as rule_name, rra.rule_id, rra.name, rra.arg_index
-            FROM " . DB::table('rewrite_rule_args') . " rra
-            INNER JOIN " . DB::table('rewrite_rules') . " rr
+            FROM " . DB::table('rewrite_rule_args') . " AS rra
+            INNER JOIN " . DB::table('rewrite_rules') . " AS rr
             ON rra.rule_id = rr.rule_id
             WHERE rra.rule_id IN (" . implode(',', $rules_with_args) . ")
             ORDER BY rra.rule_id, rra.arg_index";
@@ -52,9 +52,6 @@ class RewriteRules {
         $rules[$rule_arg['rule_name']]->named_args[]= $rule_arg['name'];
     }
 
-    /* Reset the fetch mode for other code */
-    DB::set_fetch_mode(PDO::FETCH_CLASS);
-    DB::set_fetch_class('QueryRecord');
     return $rules;
   }
 }
