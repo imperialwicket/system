@@ -17,7 +17,7 @@ class Controller extends Singleton {
    * 
    * @see singleton.php
    */
-  static public function instance() {
+  static protected function instance() {
     return parent::instance(get_class());
   }
 

@@ -14,7 +14,7 @@ class Singleton {
    * passes the class name to the parent::instance() function
    * @return object instance
    */
-  static public function instance($class) {
+  static protected function instance($class) {
     if (! isset(self::$instances[$class])) {
       self::$instances[$class]= new $class();
     }
