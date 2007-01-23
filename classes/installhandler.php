@@ -68,7 +68,7 @@ class InstallHandler extends ActionHandler {
      * OK, config.php is written now, so we can redirect to
      * the index.php page 
      */
-    Utils::redirect('index.php');
+    Utils::redirect('');
     return true;
   }
 
@@ -123,7 +123,7 @@ class InstallHandler extends ActionHandler {
 
     /* 
      * OK, user has choice to either install the database
-     * via the super (administrator) user, /or/ install the 
+     * via the root (administrator) user, /or/ install the 
      * database tables into a pre-created database (for instance,
      * if they are on a shared host that creates the DB for them)
      */
@@ -132,7 +132,7 @@ class InstallHandler extends ActionHandler {
 
     if ($install_via_root) {
       /* OK, user is saying they have root access and can install the schema directly.  Let's check */
-      if (! $this->check_root_db_credentials()) {
+      if (! $this->connect_as_root()) {
         $this->theme->assign('form_errors', array('db_root_user'=>'Bad root user credentials.'));
         return false;
       }
@@ -148,33 +148,38 @@ class InstallHandler extends ActionHandler {
             return false;
           }
         }
-      }
-    }
-    else {
-      /* OK, user is saying that the database is already created.  Let's double check, eh? */
-      if (! $this->check_db_credentials()) {
-        $this->theme->assign('form_errors', array('db_user'=>'Problem connecting to supplied database credentials'));
-        return false;
-      }
-      else {
-        DB::begin_transaction();
+        DB::commit();
       }
     }
 
-        /* OK, schema and user created.  Let's install the DB tables now. */ 
-        $create_table_queries= $this->get_create_table_queries();
-        foreach ($create_table_queries as $query) {
-          if (! DB::query($query)) {
-            $error= DB::get_last_error();
-            $this->theme->assign('form_errors', array('db_host'=>'Could not create schema tables...' . $error['message']));
-            DB::rollback();
-            return false;
-          }
-        }
+    /* OK, user is saying that the database is already created.  Let's double check, eh? */
+    if (! $this->connect_to_existing_db()) {
+      $this->theme->assign('form_errors', array('db_user'=>'Problem connecting to supplied database credentials'));
+      return false;
+    }
+
+    DB::begin_transaction();
+    /* OK, schema and user created.  Let's install the DB tables now. */ 
+    $create_table_queries= $this->get_create_table_queries();
+    foreach ($create_table_queries as $query) {
+      if (! DB::query($query)) {
+        $error= DB::get_last_error();
+        $this->theme->assign('form_errors', array('db_host'=>'Could not create schema tables...' . $error['message']));
+        DB::rollback();
+        return false;
+      }
+    }
 
     /* Cool.  DB installed.  Let's setup the admin user now. */
     if (! $this->create_admin_user()) {
       $this->theme->assign('form_errors', array('admin_user'=>'Problem creating admin user.'));
+      DB::rollback();
+      return false;
+    }
+  
+    /* Create the default options */
+    if (! $this->create_default_options()) {
+      $this->theme->assign('form_errors', array('options'=>'Problem creating default options'));
       DB::rollback();
       return false;
     }
@@ -195,7 +200,7 @@ class InstallHandler extends ActionHandler {
    *
    * @return  bool  Did the root user credentials check out?
    */
-  private function check_root_db_credentials() {
+  private function connect_as_root() {
     $db_root_user= $this->handler_vars['db_root_user'];
     $db_root_pass= $this->handler_vars['db_root_pass'];
     $db_host= $this->handler_vars['db_host'];
@@ -214,7 +219,7 @@ class InstallHandler extends ActionHandler {
    *
    * @return  bool  Database exists with credentials?
    */
-  private function check_db_credentials() {
+  private function connect_to_existing_db() {
     $db_user= $this->handler_vars['db_user'];
     $db_pass= $this->handler_vars['db_pass'];
     $db_host= $this->handler_vars['db_host'];
@@ -262,6 +267,27 @@ class InstallHandler extends ActionHandler {
   }
 
   /**
+   * Write the default options
+   */
+  private function create_default_options() {
+		// Create the default options
+		$options = Options::o();
+		
+		$options->installed = true;
+		
+		$options->title = $this->handler_vars['blog_title'];
+		$options->tagline = $this->handler_vars['blog_tagline'];
+		$options->about = $this->handler_vars['blog_about'];
+		$options->base_url = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/') + 1);
+		$options->theme_dir = 'k2';
+		$options->version = '0.1alpha';
+		$options->pagination = '5';
+
+		$options->GUID = sha1($options->base_url . Utils::nonce());
+    return true;
+  }
+
+  /**
    * Install schema tables from the respective RDBMS schema
    */
   private function get_create_table_queries() {
@@ -271,11 +297,18 @@ class InstallHandler extends ActionHandler {
 
     /* Grab the queries from the RDBMS schema file */
     $file_path= HABARI_PATH . '/system/schema/schema.' . $db_type . '.sql';
-    $schema_sql= file_get_contents($file_path);
+    $schema_sql= trim(file_get_contents($file_path), "\r\n ");
     $schema_sql= str_replace('{$schema}',$db_schema, $schema_sql);
     $schema_sql= str_replace('{$prefix}',$table_prefix, $schema_sql);
 
-    $queries= explode('\n\n', $schema_sql);
+    /* 
+     * Just in case anyone creates a schema file with separate statements
+     * not separated by two newlines, let's clean it here...
+     * Likewise, let's clean up any separations of *more* than two newlines
+     */
+    $schema_sql= preg_replace("/;\n{1}([^\n])/", ";\n\n$1", $schema_sql);
+    $schema_sql= preg_replace("/\n{3,}/","\n\n", $schema_sql);
+    $queries= explode("\n\n", $schema_sql);
     return $queries;
   }
 

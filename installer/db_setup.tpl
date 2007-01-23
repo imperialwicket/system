@@ -100,6 +100,22 @@
             <input type="textbox" name="admin_pass" value="{$admin_pass}" size="30" maxlength="50" />
             {include file="form.error.tpl" Id="admin_pass"}
           </div>
+          <h2>Blog Information</h2>
+          <div class="row">
+            <label for="blog_title">Blog Title</label>
+            <input type="textbox" name="blog_title" value="{$blog_title|default:'My Blog'}" size="50" maxlength="150" />
+            {include file="form.error.tpl" Id="blog_title"}
+          </div>
+          <div class="row">
+            <label for="blog_tagline">Blog Tagline</label>
+            <input type="textbox" name="blog_tagline" value="{$blog_tagline|default:''}" size="30" maxlength="150" />
+            {include file="form.error.tpl" Id="blog_tagline"}
+          </div>
+          <div class="row">
+            <label for=" blog_about">About</label>
+            <input type="textbox" name="blog_about" value="{$blog_about}" size="30" maxlength="150" />
+            {include file="form.error.tpl" Id="blog_about"}
+          </div>
         
           <div style="clear: both;">
             <input type="submit" value="Install Habari" />
