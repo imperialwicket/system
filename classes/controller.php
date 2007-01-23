@@ -113,22 +113,34 @@ class Controller extends Singleton {
         $submatches_count= count($pattern_matches);
         $controller->handler->handler_vars['entire_match']= $pattern_matches[0]; // The entire matched string is returned at index 0
         for ($j=1;$j<$submatches_count;++$j) {
-          $controller->action->handler_vars[$rule->named_args[($j - 1)]]= $pattern_matches[$j];
+          $controller->handler->handler_vars[$rule->named_args[($j - 1)]]= $pattern_matches[$j];
+          /* 
+           * There are times when the action is replaced by a named args.  In these
+           * cases, the action is stored in the DB as "{$arg}", and the named argument
+           * found in the pattern match replaces the controller's action
+           * 
+           * For instance, if the regex is /^admin\/([^\/]+)[\/]{0,1}$/ and the named_args
+           * is array(0=>'page'), then the page match (after the admin/) is used as the 
+           * controller's action.
+           */
+          if ($controller->action == '{$' . $rule->named_args[($j - 1)] . '}') {
+            $controller->action= $pattern_matches[$j];
+          }
         }
-        
+
         /* Also, we musn't forget to add the GET and POST vars into the action's settings array */
-        $controller->action->settings= array_merge($controller->action->settings, $_GET, $_POST);
+        $controller->handler->handler_vars= array_merge($controller->handler->handler_vars, $_GET, $_POST);
         break;
-     }
+      }
     }
   }
 
   /**
-   * Handle the requested action by firing off the matched action(s)
+   * Handle the requested action by firing off the matched handler action(s)
    */
   public function dispatch_request() {
     /* OK, set the wheels in motion... */
-    Controller::instance()->action->act();
+    Controller::instance()->handler->act(Controller::instance()->action);
   }
 
   /**
@@ -139,96 +151,9 @@ class Controller extends Singleton {
    *        as either a global variable or a class member because once
    *        processed, the rules aren't valuable anymore and should go
    *        out of scope and therefore the memory gets released.
-   * @todo  Store filters in database so users can freely edit
    */
   private function get_rules() {
-   /**
-     * Below is a sample set of regular expressions which 
-     * are used to match against the incoming stub.
-     * Rules are matched from top to bottom here, 
-     * as this is likely to be the order in which 
-     * pages naturally will be queried against the app
-     * but the order of rules could easily be set in DB
-     */
-    $rules= array();
-    $rules['display_posts_at_page']= array(
-        'parse_regex'=>'/^page\/([\d]+)[\/]{0,1}$/i'
-      , 'build_str'=>'page/{$page}'
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'display_posts'
-      , 'named_args'=>array('page')
-    );
-    $rules['display_posts_by_date']= array(
-        'parse_regex'=>'/([1,2]{1}[\d]{3})\/([\d]{2})\/([\d]{2})[\/]{0,1}$/'
-      , 'build_str'=>'{$year}/{$month}/{$day}'
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'DisplayPostsByDate'
-      , 'named_args'=>array('year','month','day')
-    );
-    $rules['display_posts_by_month']= array(
-        'parse_regex'=>'/([1,2]{1}[\d]{3})\/([\d]{2})[\/]{0,1}$/' 
-      , 'build_str'=>'{$year}/{$month}'
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'DisplayPostsByMonth'
-      , 'named_args'=>array('year','month')
-    );
-    $rules['display_posts_by_year']= array(
-        'parse_regex'=>'/([1,2]{1}[\d]{3})[\/]{0,1}$/'
-      , 'build_str'=>'{$year}'
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'DisplayPostsByYear'
-      , 'named_args'=>array('year')
-    );
-    $rules['display_feed_by_type']= array(
-        'parse_regex'=>'/^feed\/(atom|rs[sd])[\/]{0,1}$/i'
-      , 'build_str'=>'feed/{$feed_type}'
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'DisplayFeed'
-      , 'named_args'=>array('feed_type')
-    );
-    $rules['display_posts_by_tag']= array(
-        'parse_regex'=>'/^tag\/([^\/]*)[\/]{0,1}$/i'
-      , 'build_str'=>'tag/{$tag}'
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'DisplayPostsByTag'
-      , 'named_args'=>array('tag')
-    );
-    $rules['display_admin_page']= array(
-        'parse_regex'=>'/^admin\/([^\/]*)[\/]{0,1}$/i'
-      , 'build_str'=>'admin/{$action}'
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'DisplayAdminPage'
-      , 'named_args'=>array('action')
-    );
-    $rules['display_user_page']= array(
-        'parse_regex'=>'/^user\/([^\/]*)[\/]{0,1}$/i'
-      , 'build_str'=>'user/{$action}'
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'DisplayUserPage'
-      , 'named_args'=>array('action')
-    );
-    $rules['display_posts_by_slug']= array(
-        'parse_regex'=>'/([^\/]+)[\/]{0,1}$/i'
-      , 'build_str'=>'{$slug}'
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'DisplayPostBySlug'
-      , 'named_args'=>array('slug')
-    );
-    $rules['index']= array(
-        'parse_regex'=>'//'
-      , 'build_str'=>''
-      , 'handler'=>'UserThemeHandler'
-      , 'action'=>'DisplayPosts'
-      , 'named_args'=>array()
-    );
-    $rule_classes= array();
-    foreach ($rules as $key=>$rule) {
-      $current_rule= new RewriteRule();
-      foreach ($rule as $property=>$value)
-        $current_rule->$property= $value;
-      $rule_classes[]= $current_rule;
-    }
-    return $rule_classes;
+    return RewriteRules::get_active();
   }
 }
 
