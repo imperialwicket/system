@@ -93,7 +93,7 @@ class Controller extends Singleton {
     $controller->stub= $start_url;
 
     /* Grab the URL filtering rules from DB */
-    $rules= Controller::get_rules();
+    $rules= RewriteRules::get_active();
 
     /* 
      * Run the stub through the regex matcher
@@ -141,19 +141,6 @@ class Controller extends Singleton {
   public function dispatch_request() {
     /* OK, set the wheels in motion... */
     Controller::instance()->handler->act(Controller::instance()->action);
-  }
-
-  /**
-   * Return a set of active URL filtering rules
-   *
-   * 
-   * @note  We return the rules, as opposed to storing the rules as
-   *        as either a global variable or a class member because once
-   *        processed, the rules aren't valuable anymore and should go
-   *        out of scope and therefore the memory gets released.
-   */
-  private function get_rules() {
-    return RewriteRules::get_active();
   }
 }
 

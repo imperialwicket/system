@@ -176,7 +176,7 @@ class Utils
 	 **/
 	static function page_selector($current, $total, $token, $settings = array()) {
     
-    $p= array(1,0,0,0,0);
+    $p= array(1,null,null,null,null);
 
 		if(1 != $total) {
 			$p[4] = $total;

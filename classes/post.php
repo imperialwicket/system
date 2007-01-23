@@ -359,6 +359,8 @@ class Post extends QueryRecord
 	 **/	 	 	
 	private function get_permalink()
 	{
+return URL::get('display_posts_by_slug', array('slug'=>$this->fields['slug'])); // @todo separate permalink rule?
+/* Commenting out for new URL system 
 		global $url;
 		
 		return $url->get_url(
@@ -366,6 +368,7 @@ class Post extends QueryRecord
 			$this->fields,
 			false
 		);
+*/
 	}
 	
 	/**

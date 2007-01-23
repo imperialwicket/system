@@ -17,7 +17,7 @@ class AdminHandler extends ActionHandler {
 		// to the login page, if not
 		if (! User::identify()) {
 //			$this->handler_vars['redirect']= URL::get($action, $settings);
-			Utils::redirect(URLWriter::build_url('user', array('page'=>'login')));
+			Utils::redirect(URL::get('user', array('page'=>'login')));
 			exit;
 		}
 		
