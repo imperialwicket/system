@@ -8,6 +8,7 @@ class QueryProfile {
   public $start_time;   // time that query started execution
   public $end_time;     // time that query ended execution
   public $query_text;   // SQL text
+  public $backtrace;    // stack backtrace for debugging.
 
   /**
    * Constructor for the query profile.  Automatically sets the 
@@ -17,6 +18,7 @@ class QueryProfile {
    */
   public function __construct($query) {
     $this->query_text= $query;
+    $this->backtrace= debug_backtrace();
   }
 
   public function start() {
