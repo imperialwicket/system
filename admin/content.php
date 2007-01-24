@@ -1,9 +1,10 @@
+<?php include('header.php');?>
 <div id="content-area">
 	<h1>Habari Content</h1>
 	<?php 
-	if ( isset( $settings['result'] ) )
+	if (isset($result))
 	{
-		switch( URL::o()->settings['result'] ) {
+		switch($result) {
 		case 'success':
 			_e('<p>Your options have been updated.</p>');
 			break;
@@ -37,7 +38,8 @@
 	foreach (Comments::get() as $comment)
 	{
 		echo '<li>';
-		echo '<a href="mailto:' . $comment->email . '">' . $comment->name . '</a> on <a href="' . URL::get( 'post', array( 'slug' => $comment->post_slug ) ) . '">' . $comment->post_slug . '</a><br />';
+		echo '<a href="mailto:' . $comment->email . '">' . $comment->name . '</a><br />'; 
+    /* on <a href="' . URL::get( 'post', array( 'slug' => $comment->post_slug ) ) . '">' . $comment->post_slug . '</a><br />'; */
 		echo $comment->date . ' from <a href="http://ws.arin.net/cgi-bin/whois.pl?queryinput=' . $comment->ip . '">' . $comment->ip . '</a><br />';
 		echo $comment->content;
 		echo '</li>';
@@ -49,3 +51,4 @@
 <p> </p>
 
 </div>
+<?php include('footer.php');?>

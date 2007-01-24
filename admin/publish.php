@@ -1,3 +1,4 @@
+<?php include('header.php');?>
 <div id="content-area">
 	<div id="left-column">
 		<br />
@@ -37,3 +38,4 @@
 			<?php endif; ?>
 		</form>
 </div>
+<?php include('footer.php');?>

@@ -57,7 +57,7 @@ class User extends QueryRecord
 				$userid = substr($_COOKIE[$cookie], 40);
 				$cookiepass = substr($_COOKIE[$cookie], 0, 40);
 				// now try to load this user from the database
-				$user = DB::get_row('SELECT * FROM ' . DB::table('users') . ' WHERE id = ?', array($userid), 'User');
+				$user= DB::get_row('SELECT * FROM ' . DB::table('users') . ' WHERE id = ?', array($userid), 'User');
 				if ( ! $user ) {
 					return false;
 				}
@@ -111,7 +111,10 @@ class User extends QueryRecord
 		// set the cookie
 		$cookie = "habari_" . Options::get('GUID');
 		$content = sha1($this->password . $this->id) . $this->id;
-		setcookie($cookie, $content, time() + 604800, Options::get('siteurl'));
+    $site_url= Options::get('siteurl');
+    if (empty($site_url))
+      $site_url= rtrim($_SERVER['SCRIPT_NAME'], 'index.php');
+		setcookie($cookie, $content, time() + 604800, $site_url);
 	}
 
 	/** function forget

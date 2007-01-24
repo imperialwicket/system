@@ -1,3 +1,4 @@
+<?php include('header.php');?>
 <div id="content-area">
 	<div id="left-column">
 		<h1>Unapproved Comments</h1>
@@ -8,7 +9,12 @@
 	<ul id="waiting">
 		<?php foreach( Comments::get( array( 'status' => Comment::STATUS_UNAPPROVED, 'limit' => 30, 'orderby' => 'date DESC' ) ) as $comment ){ ?>
 		<li>
-			Comment by <?php echo $comment->name;?> on <a href="<?php URL::get( 'post', array( 'slug' => $comment->post_slug ) ); ?>"><?php echo $comment->post_slug; ?></a>
+			Comment by <?php echo $comment->name;?>
+<?php
+/** @todo We need to hack Comment to support post->title here... 
+<a href="<?php URL::get('post', array( 'post_id' => $comment->post_id ) ); ?>"><?php echo $comment->post_slug; </a>
+*/
+?>
 			<br /><small>(Commented created on <?php echo $comment->date; ?>)</small>
 			<p><?php echo $comment->content; ?></p>
 			<span class="manage">
@@ -63,3 +69,4 @@
 			</ul>
 		</div>
 </div>
+<?php include('footer.php');?>

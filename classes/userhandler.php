@@ -13,19 +13,26 @@ class UserHandler extends ActionHandler {
 	 * Checks a user's credentials, and creates a session for them
 	 */
 	public function act_login() {
-	  if (! User::authenticate($this->handler_vars['name'], $this->handler_vars['pass'])) {
+    $name= isset($this->handler_vars['name']) ? $this->handler_vars['name'] : '';
+    $pass= isset($this->handler_vars['pass']) ? $this->handler_vars['pass'] : '';
+    $user= User::authenticate($name, $pass);
+    if ($user === FALSE) {
       //$url->settings['error'] = "badlogin";
 			// unset the password the use tried
 			$this->handler_vars['pass']= '';
-    
+      $this->handler_vars['error']= 'Invalid login'; /** @todo Use real error handling */ 
       /* Since we failed, display the theme's login template */
       $this->theme= new Theme();
       $this->display('login');
       return true;     
 		}
-    /* OK, so they authenticated.  What now?  Redirect to admin dashboard? */
-    $redirect= URL::get('admin', array('page'=>'dashboard'));
-    Utils::redirect($redirect);
+    else {
+      /* OK, so they authenticated.  What now?  Redirect to admin dashboard? */
+      $this->handler_vars['user']= $user; // Assign into handler and theme
+      $this->theme= new Theme('admin', 'RawPHPEngine', HABARI_PATH . '/system/admin/');
+      $this->display('dashboard');
+      return true;
+    }
 	}
 
 	/**

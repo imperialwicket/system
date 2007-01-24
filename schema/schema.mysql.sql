@@ -220,8 +220,8 @@ VALUES (LAST_INSERT_ID(), 'tag', 0);
 
 INSERT INTO {$prefix}rewrite_rules
 (rule_id, name, parse_regex, build_str, handler, action, priority, description)
-VALUES (NULL, 'admin','/^admin\\/([^\\/]*)[\\/]{0,1}$/i','admin/{$page}'
-,'AdminHandler','{$page}',6,'An admin action');
+VALUES (NULL, 'admin','/^admin[\\/]*([^\\/]*)[\\/]{0,1}$/i','admin/{$page}'
+,'AdminHandler','admin',6,'An admin action');
 
 INSERT INTO {$prefix}rewrite_rule_args
 (rule_id, name, arg_index)
@@ -249,5 +249,29 @@ INSERT INTO {$prefix}rewrite_rules
 (rule_id, name, parse_regex, build_str, handler, action, priority, description)
 VALUES (NULL, 'index_page','//',''
 ,'UserThemeHandler','display_posts',1000,'Homepage (index) display');
+
+INSERT INTO {$prefix}rewrite_rules
+(rule_id, name, parse_regex, build_str, handler, action, priority, description)
+VALUES (NULL, 'rsd','/^rsd$/i','rsd'
+,'AtomHandler','rsd',1,'RSD output');
+
+INSERT INTO {$prefix}rewrite_rules
+(rule_id, name, parse_regex, build_str, handler, action, priority, description)
+VALUES (NULL, 'introspection','/^atom$/i','atom'
+,'AtomHandler','introspection',1,'Atom introspection');
+
+INSERT INTO {$prefix}rewrite_rules
+(rule_id, name, parse_regex, build_str, handler, action, priority, description)
+VALUES (NULL, 'collection','/^atom\\/(.+)[\\/]{0,1}$/i','atom/{$action}'
+,'AtomHandler','collection',1,'Atom collection');
+
+INSERT INTO {$prefix}rewrite_rule_args
+(rule_id, name, arg_index)
+VALUES (LAST_INSERT_ID(), 'action', 0);
+
+INSERT INTO {$prefix}rewrite_rules
+(rule_id, name, parse_regex, build_str, handler, action, priority, description)
+VALUES (NULL, 'search','/^search$/i','rsd'
+,'AtomHandler','display_posts',8,'Searches posts');
 
 UPDATE {$prefix}rewrite_rules SET is_active=1;

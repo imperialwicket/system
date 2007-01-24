@@ -1,3 +1,4 @@
+<?php include('header.php');?>
 <?php
 $currentuser = User::identify();
 if ( ! $currentuser )
@@ -53,3 +54,4 @@ Password (twice to confirm):<br />
 </div>
 <div style="clear: both;"></div>
 
+<?php include('footer.php');?>

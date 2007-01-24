@@ -1,3 +1,4 @@
+<?php include('header.php');?>
 <div id="content-area">
 	<div id="left-column">
 		<h1>Manage Options</h1>
@@ -24,3 +25,4 @@
 	</form>
 </div>
 </div>
+<?php include('footer.php');?>

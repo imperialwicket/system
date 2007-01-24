@@ -21,7 +21,7 @@
 			<a href="<?php URL::out('logout'); ?>" title="logout of Habari"><img src="<?php Options::out('base_url'); ?>system/admin/images/logout.png" alt="Logout of Habari" /></a>
 		</div>
 		<ol id="menu-items">
-			<?php $page = empty(URL::o()->settings['page']) ? 'overview' : URL::o()->settings['page']; ?>
+			<?php $page = empty($page) ? 'overview' : $page; ?>
 			<li <?php echo ($page == 'overview') ? 'id="current-item"' : ''; ?>><a href="<?php Options::out('base_url'); ?>admin/" title="Overview of your site">Admin</a></li>
 			<li <?php echo ($page == 'publish') ? 'id="current-item"' : ''; ?>><a href="<?php URL::out('admin', 'page=publish'); ?>" title="Edit the content of your site">Publish</a></li>
 			<li <?php echo ($page == 'options') ? 'id="current-item"' : ''; ?>><a href="<?php URL::out('admin', 'page=options'); ?>" title="edit your site options">Manage</a></li>

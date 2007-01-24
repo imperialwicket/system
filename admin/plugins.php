@@ -1,3 +1,4 @@
+<?php include('header.php');?>
 <div id="content-area">
 	<div id="left-column">
 		<div class="recent-comments">
@@ -26,3 +27,4 @@
 		</div>
 	</div>
 </div>
+<?php include('footer.php');?>

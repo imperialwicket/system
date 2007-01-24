@@ -1,3 +1,4 @@
+<?php include('header.php');?>
 <div id="content-area">
 	<div id="left-column">
 			<h1>Welcome back <?php echo User::identify()->username; ?>!</h1>
@@ -68,7 +69,8 @@
 		<div class="recent-comments">
 			<h4>Recent Comments 
 				<?php if( Comments::count_total( Comment::STATUS_UNAPPROVED ) ) { ?>
-				(<a href="manage/comments" title="View Comments Awaiting Moderation "><?php echo Comments::count_total( Comment::STATUS_UNAPPROVED ); ?> comments awaiting moderation</a> &raquo;)
+				(<a href="<?php URL::out('admin', array('page'=>'moderate', 'option'=>'comments'));?>" title="View Comments Awaiting Moderation ">
+          <?php echo Comments::count_total( Comment::STATUS_UNAPPROVED ); ?> comments awaiting moderation</a> &raquo;)
 				<?php } ?>
 			</h4>
 			<?php
@@ -142,3 +144,4 @@
 		</div>
 	</div>
 </div>
+<?php include('footer.php');?>

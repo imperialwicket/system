@@ -44,6 +44,15 @@ class URL extends Singleton {
    * @param args  (optional) array of placeholder replacement values
    */
   static public function get($rule_name, $args= array()) {
+    /*
+     * This code is here for backwards compatibility with the old
+     * URL API which allowed passing arguments as a querystring-style
+     * long string or an array.  Would be nice to remove this and standardize
+     * on one method or the other...
+     * @todo  Standardize the argument input.
+     */
+    if (! is_array($args))
+      parse_str($args, $args); 
     $writer= URL::instance();
     $writer->load_rules();
     if (isset($writer->rules[$rule_name])) {
