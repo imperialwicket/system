@@ -111,10 +111,11 @@ class User extends QueryRecord
 		// set the cookie
 		$cookie = "habari_" . Options::get('GUID');
 		$content = sha1($this->password . $this->id) . $this->id;
-    $site_url= Options::get('siteurl');
-    if (empty($site_url))
-      $site_url= rtrim($_SERVER['SCRIPT_NAME'], 'index.php');
-		setcookie($cookie, $content, time() + 604800, $site_url);
+		$site_url= Options::get('siteurl');
+		if ( empty( $site_url ) ) {
+			$site_url= rtrim( $_SERVER['SCRIPT_NAME'], 'index.php' );
+		}
+		setcookie( $cookie, $content, time() + 604800, $site_url );
 	}
 
 	/** function forget
@@ -124,7 +125,11 @@ class User extends QueryRecord
 	{
 		// delete the cookie
 		$cookie = "habari_" . Options::get('GUID');
-		setcookie($cookie, ' ', time() - 86400, Options::get('siteurl'));
+		$site_url= Options::get('siteurl');
+		if ( empty( $site_url ) ) {
+			$site_url= rtrim( $_SERVER['SCRIPT_NAME'], 'index.php' );
+		}
+		setcookie($cookie, ' ', time() - 86400, $site_url);
 		$home = Options::get('base_url');
 		header( "Location: " . $home );
 		exit;

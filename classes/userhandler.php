@@ -82,17 +82,18 @@ class UserHandler extends ActionHandler {
 	* @param string the Action that was in the URL rule
 	* @param array An associative array of settings found in the URL by the URL
 	*/
-	public function logout($settings) {
-		global $url;
-		
+	public function act_logout() {
 		// get the user from their cookie
 		if ( $user = user::identify() )
 		{
 			// delete the cookie, and destroy the object
-			$user->forget();
+			Utils::debug( $user );
+			Utils::debug( $user->forget() );
 			$user = null;
 		}
-		new ThemeHandler( 'logout', $settings );
+		Utils::debug( $user );
+		//$theme= new ThemeHandler( 'logout', $settings );
+		die;
 	}
 
   /**
