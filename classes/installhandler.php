@@ -63,12 +63,6 @@ class InstallHandler extends ActionHandler {
       $this->display('db_setup');
       return true;
     }
-
-    /*
-     * OK, config.php is written now, so we can redirect to
-     * the index.php page 
-     */
-    Utils::redirect('');
     return true;
   }
 
@@ -344,6 +338,10 @@ class InstallHandler extends ActionHandler {
    * @return  bool  Did the file get written?
    */
   private function write_config_file() {
+
+    if (file_exists(HABARI_PATH . '/config.php'))
+      return true;
+
     $db_host= $this->handler_vars['db_host'];
     $db_type= $this->handler_vars['db_type'];
     $db_schema= $this->handler_vars['db_schema'];
