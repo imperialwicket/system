@@ -229,7 +229,7 @@ VALUES (LAST_INSERT_ID(), 'page', 0);
 
 INSERT INTO {$prefix}rewrite_rules
 (rule_id, name, parse_regex, build_str, handler, action, priority, description)
-VALUES (NULL, 'user','/^admin\\/([^\\/]*)[\\/]{0,1}$/i','user/{$page}'
+VALUES (NULL, 'user','/^user\\/([^\\/]*)[\\/]{0,1}$/i','user/{$page}'
 ,'UserHandler','{$page}',7,'A user action or display, for instance the login screen');
 
 INSERT INTO {$prefix}rewrite_rule_args
