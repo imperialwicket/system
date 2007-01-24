@@ -44,7 +44,7 @@ class DB extends Singleton {
     if ($db->pdo == NULL) 
       $db->connect();
 
-    $prefix= (isset($GLOBALS['db_connection']['table_prefix']) ? $GLOBALS['db_connection']['table_prefix'] : '');
+    $prefix= (isset($GLOBALS['db_connection']['prefix']) ? $GLOBALS['db_connection']['prefix'] : '');
     $db->sql_tables['posts']= $prefix . 'posts';
     $db->sql_tables['postinfo']= $prefix . 'postinfo';
     $db->sql_tables['posttype']= $prefix . 'posttype';
@@ -138,7 +138,7 @@ class DB extends Singleton {
 	 * @param name  the table name
 	**/
 	public static function register_table($name) {
-    $prefix= (isset($GLOBALS['db_connection']['table_prefix']) ? $GLOBALS['db_connection']['table_prefix'] : '');
+    $prefix= (isset($GLOBALS['db_connection']['prefix']) ? $GLOBALS['db_connection']['prefix'] : '');
 		DB::instance()->sql_tables[$name]= $prefix . $name;
   }
 
