@@ -5,10 +5,10 @@
  * @package Habari
  */
 class QueryProfile {
-  public $start_time;   // time that query started execution
-  public $end_time;     // time that query ended execution
-  public $query_text;   // SQL text
-  public $backtrace;    // stack backtrace for debugging.
+  public $start_time;     // time that query started execution
+  public $end_time;       // time that query ended execution
+  public $query_text;     // SQL text
+  public $backtrace= '';  // stack backtrace for debugging.
 
   /**
    * Constructor for the query profile.  Automatically sets the 
@@ -18,7 +18,10 @@ class QueryProfile {
    */
   public function __construct($query) {
     $this->query_text= $query;
-    $this->backtrace= debug_backtrace();
+    /* Backtracing is very verbose. Enable only if set via query string */
+    if (isset($_GET['db_profile']) 
+      && $_GET['db_profile'] == 'verbose')
+      $this->backtrace= debug_backtrace();
   }
 
   public function start() {
