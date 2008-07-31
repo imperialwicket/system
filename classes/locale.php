@@ -4,7 +4,7 @@
  * Habari Locale Class
  *
  * Provides translation services.
- * 
+ *
  * @package Habari
  */
 class Locale
@@ -13,10 +13,11 @@ class Locale
 	private static $messages= array();
 	private static $plural_function;
 	private static $locale;
+	private static $timezone, $date_format, $time_format;
 
 	/**
 	 * Sets the locale for Habari.
-	 * 
+	 *
 	 * @param string $locale A language code like 'en' or 'en-us' or 'x-klingon', will be lowercased
 	 **/
 	public static function set( $locale= NULL )
@@ -30,10 +31,68 @@ class Locale
 	}
 
 	/**
+	 * Sets the timezone for Habari.
+	 * 
+	 * @param string $timezone A timezone name, not an abbreviation, for example 'America/New York'
+	 **/
+	public static function set_timezone( $timezone= NULL )
+	{
+		if ( $timezone == NULL ) {
+			return;
+		}
+		
+		date_default_timezone_set( $timezone );
+		self::$timezone= $timezone;
+	}
+	
+	/**
+	 * Sets the date format for Habari.
+	 * 
+	 * @param string $date_format A timezone name, not an abbreviation, for example 'America/New York'
+	 **/
+	public static function set_date_format( $date_format= NULL )
+	{
+		if ( $date_format == NULL ) {
+			return;
+		}
+		
+		self::$date_format= $date_format;
+	}
+	
+	/**
+	 * Sets the time format for Habari.
+	 * 
+	 * @param string $timezone A timezone name, not an abbreviation, for example 'America/New York'
+	 **/
+	public static function set_time_format( $time_format= NULL )
+	{
+		if ( $time_format == NULL ) {
+			return;
+		}
+		
+		self::$time_format= $time_format;
+	}
+	
+	public static function get_timezone()
+	{
+		return self::$timezone;
+	}
+	
+	public static function get_date_format()
+	{
+		return self::$date_format;
+	}
+	
+	public static function get_time_format()
+	{
+		return self::$time_format;
+	}
+	
+	/**
 	 * Load translations for a given domain and base directory for a pluggable object.
 	 * Translations are stored in gettext-style .mo files.
 	 * The internal workings of the file format are not entirely meant to be understood.
-	 * 
+	 *
 	 * @link http://www.gnu.org/software/gettext/manual/html_node/gettext_136.html GNU Gettext Manual: Description of the MO file format
 	 * @param string $domain the domain to load
 	 * @param string $base_dir the base directory in which to find the translation files
@@ -49,7 +108,7 @@ class Locale
 	 * Load translations for a given domain.
 	 * Translations are stored in gettext-style .mo files.
 	 * The internal workings of the file format are not entirely meant to be understood.
-	 * 
+	 *
 	 * @link http://www.gnu.org/software/gettext/manual/html_node/gettext_136.html GNU Gettext Manual: Description of the MO file format
 	 * @param string $domain the domain to load
 	 * @return boolean TRUE if data was successfully loaded, FALSE otherwise
@@ -63,7 +122,7 @@ class Locale
 
 	/**
 	 * Load translations from a given file.
-	 * 
+	 *
 	 * @param string $domain the domain to load the data into
 	 * @param string $file the file name
 	 * @return boolean TRUE if data was successfully loaded, FALSE otherwise
@@ -217,37 +276,49 @@ class Locale
 	/**
 	 * Echo a version of the string translated into the current locale
 	 * @param string $text The text to echo translated
-	 * @param string $domain (optional) The domain to search for the message	 
+	 * @param string $domain (optional) The domain to search for the message
 	 **/
-	public static function _e( $text, $domain= 'habari' )
+	public static function _e( )
 	{
-		echo self::_t( $text, $domain );
+		$args = func_get_args();
+		echo call_user_func_array(array('Locale', '_t'), $args);
 	}
 
 	/**
 	 * Return a version of the string translated into the current locale
-	 * 
+	 *
 	 * @param string $text The text to echo translated
-	 * @param string $domain (optional) The domain to search for the message	 
+	 * @param string $domain (optional) The domain to search for the message
 	 * @return string The translated string
 	 **/
-	public static function _t( $text, $domain= 'habari' )
+	public static function _t($text, $args = array(), $domain = 'habari')
 	{
+		if( is_string($args) ) {
+			$domain = $args;
+		}
+
 		if ( isset( self::$messages[$domain][$text] ) ) {
-			return self::$messages[$domain][$text][1][0];
+			$t = self::$messages[$domain][$text][1][0];
 		}
 		else {
-			return $text;
+			$t = $text;
 		}
+
+		if(!empty($args)) {
+			array_unshift($args, $t);
+			$t = call_user_func_array('sprintf', $args);
+		}
+
+		return $t;
 	}
 
 	/**
 	 * Echo singular or plural version of the string, translated into the current locale, based on the count provided
-	 * 
+	 *
 	 * @param string $singular The singular form
 	 * @param string $plural The plural form
 	 * @param string $count The count
-	 * @param string $domain (optional) The domain to search for the message	 
+	 * @param string $domain (optional) The domain to search for the message
 	 **/
 	public static function _ne( $singular, $plural, $count, $domain= 'habari' )
 	{
@@ -256,13 +327,13 @@ class Locale
 
 	/**
 	 * Return a singular or plural string translated into the current locale based on the count provided
-	 * 
+	 *
 	 * @param string $singular The singular form
 	 * @param string $plural The plural form
 	 * @param string $count The count
-	 * @param string $domain (optional) The domain to search for the message	 
+	 * @param string $domain (optional) The domain to search for the message
 	 * @return string The appropriately translated string
-	 **/       
+	 **/
 	public static function _n($singular, $plural, $count, $domain= 'habari')
 	{
 		if ( isset( self::$messages[$domain][$singular] ) ) {
@@ -279,13 +350,13 @@ class Locale
 }
 
 /**
- * Echo a version of the string translated into the current locale, alias for Locale::_e() 
- * 
+ * Echo a version of the string translated into the current locale, alias for Locale::_e()
+ *
  * @param string $text The text to translate
  **/
-function _e( $text, $domain= 'habari' )
+function _e( $text, $args = array(), $domain= 'habari' )
 {
-	return Locale::_e( $text, $domain );
+	return Locale::_e( $text, $args, $domain );
 }
 
 /**
@@ -303,23 +374,23 @@ function _ne( $singular, $plural, $count, $domain= 'habari' )
 
 /**
  * Return a version of the string translated into the current locale, alias for Locale::_t()
- *  
+ *
  * @param string $text The text to translate
  * @return string The translated string
  **/
-function _t( $text, $domain= 'habari' )
+function _t( $text, $args = array(), $domain= 'habari' )
 {
-	return Locale::_t( $text, $domain );
+	return Locale::_t( $text, $args, $domain );
 }
 
 /**
  * Return a singular or plural string translated into the current locale based on the count provided
- * 
+ *
  * @param string $singular The singular form
  * @param string $plural The plural form
  * @param string $count The count
  * @return string The appropriately translated string
- **/       
+ **/
 function _n( $singular, $plural, $count, $domain= 'habari' )
 {
 	return Locale::_n( $singular, $plural, $count, $domain );

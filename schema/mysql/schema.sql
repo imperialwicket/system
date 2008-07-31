@@ -8,8 +8,8 @@ CREATE TABLE {$prefix}posts (
   cached_content LONGTEXT NOT NULL,
   user_id SMALLINT UNSIGNED NOT NULL,
   status SMALLINT UNSIGNED NOT NULL,
-  pubdate DATETIME NOT NULL,
-  updated TIMESTAMP NOT NULL,
+  pubdate INT UNSIGNED NOT NULL,
+  updated INT UNSIGNED NOT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY slug (slug(80))
 );
@@ -84,7 +84,7 @@ CREATE TABLE  {$prefix}comments (
   ip INT UNSIGNED NOT NULL,
   content TEXT,
   status SMALLINT UNSIGNED NOT NULL,
-  date TIMESTAMP NOT NULL,
+  date INT UNSIGNED NOT NULL,
   type SMALLINT UNSIGNED NOT NULL,
   PRIMARY KEY (id),
   KEY post_id (post_id)
@@ -135,7 +135,7 @@ CREATE TABLE {$prefix}log (
   severity_id TINYINT NOT NULL,
   message VARCHAR(255) NOT NULL,
   data BLOB NULL,
-  timestamp DATETIME NOT NULL,
+  timestamp INT UNSIGNED NOT NULL,
   ip INT UNSIGNED NOT NULL, 
   PRIMARY KEY (id)
 );

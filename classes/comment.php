@@ -232,6 +232,11 @@ class Comment extends QueryRecord implements IsContent
 		switch($name) {
 		case 'status':
 			return $this->setstatus($value);
+		case 'date':
+			if ( !($value instanceOf HabariDateTime) ) {
+				$value= HabariDateTime::date_create($value);
+			}
+			break;
 		case 'post':
 			if ( is_int( $value ) )
 			{

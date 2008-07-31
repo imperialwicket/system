@@ -264,8 +264,8 @@ class Post extends QueryRecord implements IsContent
 			'cached_content' => '',
 			'user_id' => 0,
 			'status' => Post::status( 'draft' ),
-			'pubdate' => date( 'Y-m-d H:i:s' ),
-			'updated' => date ( 'Y-m-d H:i:s' ),
+			'pubdate' => HabariDateTime::date_create(),
+			'updated' => HabariDateTime::date_create(),
 			'content_type' => Post::type( 'entry' )
 		);
 	}
@@ -288,6 +288,7 @@ class Post extends QueryRecord implements IsContent
 			$this->tags= $this->parsetags( $this->fields['tags'] );
 			unset( $this->fields['tags'] );
 		}
+
 		$this->exclude_fields( 'id' );
 		$this->info= new PostInfo ( $this->fields['id'] );
 		 /* $this->fields['id'] could be null in case of a new post. If so, the info object is _not_ safe to use till after set_key has been called. Info records can be set immediately in any other case. */
@@ -570,7 +571,7 @@ ENDOFSQL;
 		}
 		DB::commit();
 		return TRUE;
-		
+
 	}
 
 	/**
@@ -579,7 +580,7 @@ ENDOFSQL;
 	 */
 	public function insert()
 	{
-		$this->newfields[ 'updated' ]= date( 'Y-m-d H:i:s' );
+		$this->newfields[ 'updated' ]= HabariDateTime::date_create();
 		$this->setslug();
 		$this->setguid();
 
@@ -620,7 +621,7 @@ ENDOFSQL;
 	 */
 	public function update()
 	{
-		$this->updated= date( 'Y-m-d H:i:s' );
+		$this->updated= HabariDateTime::date_create();
 		if ( isset( $this->fields['guid'] ) ) {
 			unset( $this->newfields['guid'] );
 		}
@@ -719,12 +720,12 @@ ENDOFSQL;
 		Plugins::act( 'post_publish_before', $this );
 
 		if ( $this->status != Post::status( 'scheduled' ) )  {
-			$this->pubdate= date( 'Y-m-d H:i:s' );
+			$this->pubdate= new HabariDateTime();
 		}
 
 		if ( $this->status == Post::status( 'scheduled' ) ) {
 			$this->get_tags();
-			$msg= sprintf(_t('Scheduled Post %1$s (%2$s) published at %3$s.'), $this->id, $this->slug, date( 'Y-m-d H:i:s' ));
+			$msg= sprintf(_t('Scheduled Post %1$s (%2$s) published at %3$s.'), $this->id, $this->slug, $this->pubdate->format());
 		}
 		else {
 			$msg= sprintf(_t('Post %1$s (%2$s) published.'), $this->id, $this->slug);
@@ -805,7 +806,10 @@ ENDOFSQL;
 	{
 		switch( $name ) {
 		case 'pubdate':
-			$value= date( 'Y-m-d H:i:s', strtotime( $value ) );
+		case 'updated':
+			if ( !($value instanceOf HabariDateTime) ) {
+				$value= HabariDateTime::date_create($value);
+			}
 			break;
 		case 'tags':
 			return $this->tags= $this->parsetags( $value );
@@ -940,7 +944,7 @@ ENDOFSQL;
 		$arr= array( 'content_type_name' => Post::type_name( $this->content_type ) );
 		$author= URL::extract_args( $this->author, 'author_' );
 		$info= URL::extract_args( $this->info, 'info_' );
-		$args= array_merge( $author, $info, $arr, $this->to_array(), Utils::getdate( strtotime( $this->pubdate ) ) );
+		$args= array_merge( $author, $info, $arr, $this->to_array(), $this->pubdate->getdate() );
 
 		return $args;
 	}

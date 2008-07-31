@@ -9,8 +9,8 @@ CREATE TABLE {$prefix}posts (
   cached_content TEXT NOT NULL,
   user_id INTEGER NOT NULL,
   status INTEGER NOT NULL,
-  pubdate TIMESTAMP NOT NULL,
-  updated TIMESTAMP NOT NULL,
+  pubdate INT UNSIGNED NOT NULL,
+  updated INT UNSIGNED NOT NULL,
   PRIMARY KEY (id),
   UNIQUE (slug)
 );
@@ -98,7 +98,7 @@ CREATE TABLE {$prefix}comments (
   ip BIGINT NOT NULL,
   content TEXT,
   status INTEGER NOT NULL,
-  date TIMESTAMP NOT NULL,
+  date INT UNSIGNED NOT NULL,
   type INTEGER NOT NULL,
   PRIMARY KEY (id)
 );
@@ -158,7 +158,7 @@ CREATE TABLE {$prefix}log (
   severity_id SMALLINT NOT NULL,
   message VARCHAR(255) NOT NULL,
   data BYTEA NULL,
-  timestamp TIMESTAMP NOT NULL,
+  timestamp INT UNSIGNED NOT NULL,
   ip BIGINT NOT NULL DEFAULT 0, 
   PRIMARY KEY (id)
 );

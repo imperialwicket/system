@@ -10,8 +10,8 @@ CREATE TABLE {$prefix}posts (
   cached_content LONGTEXT NOT NULL,
   user_id SMALLINT UNSIGNED NOT NULL,
   status SMALLINT UNSIGNED NOT NULL,
-  pubdate DATETIME NOT NULL,
-  updated TIMESTAMP NOT NULL
+  pubdate INT UNSIGNED NOT NULL,
+  updated INT UNSIGNED NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS slug ON {$prefix}posts(slug);
 
@@ -81,7 +81,7 @@ CREATE TABLE {$prefix}comments (
   ip INTEGER UNSIGNED NOT NULL,
   content TEXT,
   status SMALLINT UNSIGNED NOT NULL,
-  date TIMESTAMP NOT NULL,
+  date INT UNSIGNED NOT NULL,
   type SMALLINT UNSIGNED NOT NULL
 );
 CREATE INDEX IF NOT EXISTS comments_post_id ON {$prefix}comments(post_id);
@@ -129,7 +129,7 @@ CREATE TABLE {$prefix}log (
   severity_id TINYINT NOT NULL,
   message VARCHAR(255) NOT NULL,
   data BLOB NULL,
-  timestamp DATETIME NOT NULL,
+  timestamp INT UNSIGNED NOT NULL,
   ip INTEGER UNSIGNED NOT NULL
 );
 

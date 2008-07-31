@@ -1,7 +1,7 @@
 <?php
 /**
  * Habari AdminHandler Class
- * Backbone of the admin area, handles requests and functionality.
+	* Backbone of the admin area, handles requests and functionality.
  *
  * @package Habari
  */
@@ -24,15 +24,15 @@ class AdminHandler extends ActionHandler
 				echo '{callback: function(){location.href="'.$_SERVER['HTTP_REFERER'].'"} }';
 			}
 			else {
-				if ( !empty( $_POST ) ) {
-					Session::add_to_set( 'last_form_data', $_POST, 'post' );
-					Session::error( _t('We saved the last form you posted. Log back in to continue its submission.'), 'expired_form_submission' );
-				}
-				if ( !empty( $_GET ) ) {
-					Session::add_to_set( 'last_form_data', $_GET, 'get' );
-					Session::error( _t('We saved the last form you posted. Log back in to continue its submission.'), 'expired_form_submission' );
-				}
-				Utils::redirect( URL::get( 'user', array( 'page' => 'login' ) ) );
+			if ( !empty( $_POST ) ) {
+				Session::add_to_set( 'last_form_data', $_POST, 'post' );
+				Session::error( _t('We saved the last form you posted. Log back in to continue its submission.'), 'expired_form_submission' );
+			}
+			if ( !empty( $_GET ) ) {
+				Session::add_to_set( 'last_form_data', $_GET, 'get' );
+				Session::error( _t('We saved the last form you posted. Log back in to continue its submission.'), 'expired_form_submission' );
+			}
+			Utils::redirect( URL::get( 'user', array( 'page' => 'login' ) ) );
 			}
 			exit;
 		}
@@ -65,11 +65,11 @@ class AdminHandler extends ActionHandler
 		$this->theme= Themes::create( 'admin', 'RawPHPEngine', $theme_dir );
 
 		// Add some default stylesheets
-		Stack::add('admin_stylesheet', array(Site::get_url('habari') . '/3rdparty/blueprint/screen.css', 'screen'), 'blueprint');
-		Stack::add('admin_stylesheet', array(Site::get_url('habari') . '/3rdparty/blueprint/print.css', 'print'), 'blueprint_print');
-		Stack::add('admin_stylesheet', array(Site::get_url('admin_theme') . '/css/admin.css', 'screen'), 'admin');
+	  Stack::add('admin_stylesheet', array(Site::get_url('habari') . '/3rdparty/blueprint/screen.css', 'screen'), 'blueprint');
+	  Stack::add('admin_stylesheet', array(Site::get_url('habari') . '/3rdparty/blueprint/print.css', 'print'), 'blueprint_print');
+	  Stack::add('admin_stylesheet', array(Site::get_url('admin_theme') . '/css/admin.css', 'screen'), 'admin');
 
-		// Add some default scripts
+	  // Add some default scripts
 
 
 		$this->set_admin_template_vars( $this->theme );
@@ -176,7 +176,7 @@ class AdminHandler extends ActionHandler
 				),
 			);
 
-		/*$option_items[_t('Time & Date')] = array(
+		$option_items[_t('Time & Date')] = array(
 			'presets' => array(
 				'label' => _t('Presets'),
 				'type' => 'select',
@@ -203,7 +203,7 @@ class AdminHandler extends ActionHandler
 				'type' => 'text',
 				'helptext' => '21:44',
 				)
-			);*/
+			);
 
 		$option_items[_t('Language')] = array(
 			'locale' => array(
@@ -236,10 +236,10 @@ class AdminHandler extends ActionHandler
 				$field->class = 'item clear';
 				if ( $option['type'] == 'select' && isset( $option['selectarray'] ) ) {
 					$field->options = $option['selectarray'];
-				}
-				// @todo: do something with helptext
 			}
+				// @todo: do something with helptext
 		}
+			}
 
 		/* @todo: filter for additional options from plugins
 		 * We could either use existing config forms and simply extract
@@ -252,7 +252,7 @@ class AdminHandler extends ActionHandler
 		$this->theme->form = $form->get();
 		$this->theme->option_names = array_keys( $option_items );
 		$this->theme->display( 'options' );
-	}
+		}
 
 	/**
 	 * Display a message when the site options are saved, and save those options
@@ -391,10 +391,10 @@ class AdminHandler extends ActionHandler
 			$post->content= $form->content->value;
 			$post->content_type= $form->content_type->value;
 			if ( ( $post->status != Post::status( 'published' ) ) && ( $form->status->value == Post::status( 'published' ) ) ) {
-				$post->pubdate= date( 'Y-m-d H:i:s' );
+				$post->pubdate= HabariDateTime::date_create();
 			}
 			else {
-				$post->pubdate= $form->pubdate->value;
+				$post->pubdate= HabariDateTime::date_create($pubdate);
 			}
 
 			$post->status= $form->status->value;
@@ -406,7 +406,7 @@ class AdminHandler extends ActionHandler
 				'tags' => $form->tags->value,
 				'content' => $form->content->value,
 				'user_id' => User::identify()->id,
-				'pubdate' => ( $form->pubdate->value == '' ) ? date( 'Y-m-d H:i:s' ) : $form->pubdate->value,
+				'pubdate' => HabariDateTime::date_create($form->pubdate->value),
 				'status' => $form->status->value,
 				'content_type' => $form->content_type->value,
 			);
@@ -414,7 +414,7 @@ class AdminHandler extends ActionHandler
 			$post= Post::create( $postdata );
 		}
 
-		if( $form->pubdate->value > date('Y-m-d H:i:s') && $form->status->value == Post::status('published') ) {
+		if( HabariDateTime::date_create($form->pubdate->value)->format() > HabariDateTime::date_create()->format() && $status == Post::status('published') ) {
 			$post->status = Post::status( 'scheduled' );
 		}
 		$post->info->comments_disabled= !$form->comments_enabled->value;
@@ -602,7 +602,7 @@ class AdminHandler extends ActionHandler
 		$results= array( 'page' => 'user' );
 		$currentuser= User::identify();
 		extract( $this->handler_vars );
-		$fields= array( 'user_id' => 'id', 'delete' => NULL, 'username' => 'username', 'displayname' => 'displayname', 'email' => 'email', 'imageurl' => 'imageurl', 'pass1' => NULL );
+		$fields= array( 'user_id' => 'id', 'delete' => NULL, 'username' => 'username', 'displayname' => 'displayname', 'email' => 'email', 'imageurl' => 'imageurl', 'pass1' => NULL, 'locale_tz' => 'locale_tz', 'locale_date_format' => 'locale_date_format', 'locale_time_format' => 'locale_time_format' );
 		$fields= Plugins::filter( 'adminhandler_post_user_fields', $fields );
 		$posted_fields= array_intersect_key( $this->handler_vars, $fields );
 
@@ -618,23 +618,23 @@ class AdminHandler extends ActionHandler
 		foreach ( $posted_fields as $posted_field => $posted_value ) {
 			switch ( $posted_field ) {
 				case 'delete': // Deleting a user
-					if ( isset( $user_id ) && ( $currentuser->id != intval( $user_id ) ) ) {
-						$username= $user->username;
-						$posts= Posts::get( array( 'user_id' => $user_id, 'nolimit' => 1 ) );
-						if ( isset( $reassign ) && ( 1 === intval( $reassign ) ) ) {
-							// we're going to re-assign all of this user's posts
-							$newauthor= isset( $author ) ? intval( $author ) : 1;
-							Posts::reassign( $newauthor, $posts );
-						}
-						else {
-							// delete posts
-							foreach ( $posts as $post ) {
-								$post->delete();
+						if ( isset( $user_id ) && ( $currentuser->id != intval( $user_id ) ) ) {
+							$username= $user->username;
+							$posts= Posts::get( array( 'user_id' => $user_id, 'nolimit' => 1 ) );
+							if ( isset( $reassign ) && ( 1 === intval( $reassign ) ) ) {
+								// we're going to re-assign all of this user's posts
+								$newauthor= isset( $author ) ? intval( $author ) : 1;
+								Posts::reassign( $newauthor, $posts );
 							}
+							else {
+								// delete posts
+								foreach ( $posts as $post ) {
+									$post->delete();
+								}
+							}
+							$user->delete();
+							Session::notice( sprintf( _t( '%s has been deleted' ), $username ) );
 						}
-						$user->delete();
-						Session::notice( sprintf( _t( '%s has been deleted' ), $username ) );
-					}
 					// redirect to main user list
 					$results= array( 'page' => 'users' );
 					Utils::redirect( URL::get( 'admin', $results ) );
@@ -865,16 +865,16 @@ class AdminHandler extends ActionHandler
 		$plugins = Plugins::list_all();
 		foreach($plugins as $file) {
 			if(Plugins::id_from_file($file) == $plugin_id) {
-				if ( 'activate' == strtolower( $action ) ) {
+		if ( 'activate' == strtolower( $action ) ) {
 					Plugins::activate_plugin( $file );
-					$plugins= Plugins::get_active();
+			$plugins= Plugins::get_active();
 					Session::notice( sprintf( _t( "Activated plugin '%s'" ), $plugins[Plugins::id_from_file( $file )]->info->name ) );
-				}
-				else {
-					$plugins= Plugins::get_active();
+		}
+		else {
+			$plugins= Plugins::get_active();
 					Session::notice( sprintf( _t( "Deactivated plugin '%s'" ), $plugins[Plugins::id_from_file( $file )]->info->name ) );
 					Plugins::deactivate_plugin( $file );
-				}
+		}
 			}
 		}
 		Utils::redirect( URL::get( 'admin', 'page=plugins' ) );
@@ -1061,30 +1061,30 @@ class AdminHandler extends ActionHandler
 				Plugins::act( 'admin_moderate_comments', $action, $to_update, $this );
 
 				switch ( $action ) {
-				case 'delete':
-					// This comment was marked for deletion
+					case 'delete':
+						// This comment was marked for deletion
 					Comments::delete_these( $to_update );
 					$modstatus['Deleted %d comments'] = count( $to_update );
-					break;
-				case 'spam':
-					// This comment was marked as spam
+						break;
+					case 'spam':
+							// This comment was marked as spam
 					Comments::moderate_these( $to_update, Comment::STATUS_SPAM );
 					$modstatus['Marked %d comments as spam'] = count( $to_update );
-					break;
-				case 'approve':
+						break;
+					case 'approve':
 					// Comments marked for approval
 					Comments::moderate_these( $to_update, Comment::STATUS_APPROVED );
 					$modstatus['Approved %d comments'] = count( $to_update );
 					foreach( $to_update as $comment ) {
-						$modstatus['Approved comments on these posts: %s']= (isset($modstatus['Approved comments on these posts: %s'])? $modstatus['Approved comments on these posts: %s'] . ' &middot; ' : '') . '<a href="' . $comment->post->permalink . '">' . $comment->post->title . '</a> ';
+								$modstatus['Approved comments on these posts: %s']= (isset($modstatus['Approved comments on these posts: %s'])? $modstatus['Approved comments on these posts: %s'] . ' &middot; ' : '') . '<a href="' . $comment->post->permalink . '">' . $comment->post->title . '</a> ';
 					}
-					break;
-				case 'unapprove':
-					// This comment was marked for unapproval
+						break;
+					case 'unapprove':
+						// This comment was marked for unapproval
 					Comments::moderate_these( $to_update, Comment::STATUS_UNAPPROVED );
 					$modstatus['Unapproved %d comments'] = count ( $to_update );
-					break;
-				case 'edit':
+						break;
+					case 'edit':
 					foreach ( $to_update as $comment ) {
 						// This comment was edited
 						if( $_POST['name_' . $comment->id] != NULL ) {
@@ -1101,8 +1101,8 @@ class AdminHandler extends ActionHandler
 						}
 					}
 					$modstatus['Edited %d comments'] = count( $to_update );
-				break;
-				}
+						break;
+					}
 				foreach ( $modstatus as $key => $value ) {
 					if ( $value ) {
 						Session::notice( sprintf( _t( $key ), $value ) );
@@ -1150,7 +1150,7 @@ class AdminHandler extends ActionHandler
 		foreach( $monthcts as $month ) {
 			if ( isset($years[$month->year]) ) {
 				$years[$month->year][]= $month;
-			}
+	}
 			else {
 				$years[$month->year]= array( $month );
 			}
@@ -1325,7 +1325,7 @@ class AdminHandler extends ActionHandler
 		foreach( $monthcts as $month ) {
 			if ( isset($years[$month->year]) ) {
 				$years[$month->year][]= $month;
-			}
+	}
 			else {
 				$years[$month->year]= array( $month );
 			}
@@ -1584,7 +1584,7 @@ class AdminHandler extends ActionHandler
 		foreach ( $to_delete as $log ) {
 			$log->delete();
 			$count++;
-		}
+	}
 		foreach ( $logstatus as $key => $value ) {
 			if ( $value ) {
 				Session::notice( sprintf( _t( $key ), $value ) );
@@ -1814,7 +1814,7 @@ class AdminHandler extends ActionHandler
 		foreach( $monthcts as $month ) {
 			if ( isset($years[$month->year]) ) {
 				$years[$month->year][]= $month;
-			}
+		}
 			else {
 				$years[$month->year]= array( $month );
 			}
@@ -2094,7 +2094,7 @@ class AdminHandler extends ActionHandler
 
 			if( $page == 'publish' && isset($this->handler_vars['content_type']) && $this->handler_vars['content_type'] == $type ) {
 				$createmenu['create_' . $typeint]['selected'] = TRUE;
-			}
+		}
 			if( $page == 'posts' && isset($this->handler_vars['type']) && $this->handler_vars['type'] == $typeint ) {
 				$managemenu['manage_' . $typeint]['selected'] = TRUE;
 			}
@@ -2120,7 +2120,7 @@ class AdminHandler extends ActionHandler
 			// Change this to set the correct menu as the active menu
 			if( !isset( $mainmenus[$menu_id]['selected'] ) ) {
 				$mainmenus[$menu_id]['selected'] = false;
-			}
+		}
 		}
 
 		$mainmenus = Plugins::filter( 'adminhandler_post_loadplugins_main_menu', $mainmenus );
@@ -2208,7 +2208,7 @@ class AdminHandler extends ActionHandler
 		$modules = Modules::get_all();
 		if ( $modules ) {
 			$modules = array_combine( array_values( $modules ), array_values( $modules ) );
-		}
+}
 
 		$form = new FormUI( 'dash_additem' );
 		$form->append( 'select', 'module', 'null:unused' );

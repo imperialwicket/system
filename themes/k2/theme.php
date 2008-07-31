@@ -16,8 +16,6 @@ Format::apply( 'autop', 'post_content_out' );
 Format::apply( 'autop', 'comment_content_out' );
 // Apply Format::tag_and_list() to post tags...
 Format::apply( 'tag_and_list', 'post_tags_out' );
-// Apply Format::nice_date() to post date...
-Format::apply( 'nice_date', 'post_pubdate_out', 'F j, Y g:ia' );
 
 // Remove the comment on the following line to limit post length on the home page to 1 paragraph or 100 characters
 //Format::apply_with_hook_params( 'more', 'post_content_out', _t('more'), 100, 1 );
