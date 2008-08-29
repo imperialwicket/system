@@ -12,6 +12,7 @@ CREATE TABLE {$prefix}posts (
   status SMALLINT UNSIGNED NOT NULL,
   pubdate INT UNSIGNED NOT NULL,
   updated INT UNSIGNED NOT NULL
+  modified INT UNSIGNED NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS slug ON {$prefix}posts(slug);
 
@@ -104,18 +105,19 @@ CREATE TABLE {$prefix}rewrite_rules (
   priority SMALLINT UNSIGNED NOT NULL,
   is_active SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   rule_class SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-  description TEXT NULL
+  description TEXT NULL,
+  parameters TEXT NULL
 );
 
 CREATE TABLE {$prefix}crontab (
   cron_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   name VARCHAR(255) NOT NULL,
   callback VARCHAR(255) NOT NULL,
-  last_run VARCHAR(255) NOT NULL,
-  next_run VARCHAR(255) NOT NULL,
-  increment VARCHAR(255) NOT NULL,
-  start_time VARCHAR(255) NOT NULL,
-  end_time VARCHAR(255) NOT NULL,
+  last_run INT UNSIGNED NOT NULL,
+  next_run INT UNSIGNED NOT NULL,
+  increment INT UNSIGNED NOT NULL,
+  start_time INT UNSIGNED NOT NULL,
+  end_time INT UNSIGNED NOT NULL,
   result VARCHAR(255) NOT NULL,
   notify VARCHAR(255) NOT NULL,
   cron_class TINYINT UNSIGNED NOT NULL DEFAULT 0,
@@ -146,27 +148,12 @@ CREATE TABLE {$prefix}groups (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS group_name ON {$prefix}groups(name);
 
-CREATE TABLE {$prefix}permissions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  description VARCHAR(255)
-);
-CREATE UNIQUE INDEX IF NOT EXISTS permissions_name ON {$prefix}permissions(name);
-
 CREATE TABLE {$prefix}users_groups (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   user_id INTEGER UNSIGNED NOT NULL,
   group_id INTEGER UNSIGNED NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS user_group ON {$prefix}users_groups(user_id,group_id);
-
-CREATE TABLE {$prefix}groups_permissions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  group_id INTEGER UNSIGNED NOT NULL,
-  permission_id INTEGER UNSIGNED NOT NULL,
-  denied TINYINT UNSIGNED NOT NULL DEFAULT 0
-);
-CREATE UNIQUE INDEX IF NOT EXISTS group_permission ON {$prefix}groups_permissions(group_id,permission_id);
 
 CREATE TABLE {$prefix}sessions  (
   token VARCHAR(255) NOT NULL,
@@ -177,3 +164,73 @@ CREATE TABLE {$prefix}sessions  (
   data TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS token_key ON {$prefix}sessions(token);
+
+CREATE TABLE {$prefix}terms (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  term VARCHAR(255) NOT NULL,
+  term_display VARCHAR(255) NOT NULL,
+  vocabulary_id INTEGER NOT NULL,
+  mptt_left INTEGER UNSIGNED NOT NULL,
+  mptt_right INTEGER UNSIGNED NOT NULL
+);
+
+CREATE TABLE {$prefix}vocabularies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  hierarchical TINYINT(1) UNSIGNED NOT NULL DEFAUlT 0,
+  required TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+);
+
+CREATE TABLE {$prefix}object_terms (
+  object_id INTEGER NOT NULL,
+  term_id INTEGER NOT NULL,
+  object_type_id INTEGER NOT NULL,
+  PRIMARY KEY (post_id,term_id)
+);
+
+CREATE TABLE {$prefix}object_types (
+  id INTEGER PRIMARY KEY NOT NULL,
+  name VARCHAR(50)
+);
+
+INSERT INTO {$prefix}object_types VALUES
+  (0, 'post');
+
+CREATE TABLE {$prefix}tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description VARCHAR(255) NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS name ON {$prefix}tokens(name);
+
+CREATE TABLE {$prefix}post_tokens (
+  post_id INTEGER NOT NULL,
+  token_id INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS post_token ON {$prefix}post_tokens(post_id,token_id);
+
+CREATE TABLE {$prefix}group_token_permissions (
+  group_id INTEGER NOT NULL,
+  token_id INTEGER NOT NULL,
+  permission_flag TINYINT UNSIGNED NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS group_permission ON {$prefix}group_token_permission(group_id,token_id);
+
+CREATE TABLE {$prefix}user_token_permissions (
+  user_id INTEGER NOT NULL,
+  token_id INTEGER NOT NULL,
+  permission_flag TINYINT UNSIGNED NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS user_permission ON {$prefix}user_token_permissions(user_id,token_id);
+
+CREATE TABLE {$prefix}permissions (
+  permission_flag TINYINT UNSIGNED PRIMARY KEY NOT NULL,
+  description VARCHAR(255) NOT NULL
+);
+
+INSERT INTO {$prefix}permissions VALUES
+  (0, 'denied'),
+  (1, 'read'),
+  (2, 'write'),
+  (3, 'full');
