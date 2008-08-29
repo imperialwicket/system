@@ -105,7 +105,7 @@ class SQLiteConnection extends DatabaseConnection
 		}
 
 		// Merge the queries into allqueries; pragmas MUST go first
-		$allqueries = array_merge($pqueries, $iqueries);
+		$allqueries = array_merge($pqueries);
 
 		$tables= $this->get_column( "SELECT name FROM sqlite_master WHERE type = 'table';" );
 
@@ -126,8 +126,7 @@ class SQLiteConnection extends DatabaseConnection
 			}
 		}
 
-		$allqueries = array_merge($allqueries, $indexqueries);
-
+		$allqueries = array_merge($allqueries, $indexqueries, $iqueries);
 		if ( $execute ) {
 			foreach ( $allqueries as $query ) {
 				if ( !$this->query( $query ) ) {

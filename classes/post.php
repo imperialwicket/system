@@ -266,6 +266,7 @@ class Post extends QueryRecord implements IsContent
 			'status' => Post::status( 'draft' ),
 			'pubdate' => HabariDateTime::date_create(),
 			'updated' => HabariDateTime::date_create(),
+			'modified' => HabariDateTime::date_create(),
 			'content_type' => Post::type( 'entry' )
 		);
 	}
@@ -454,7 +455,7 @@ class Post extends QueryRecord implements IsContent
 	 */
 	private function save_tags()
 	{
-		/* 
+		/*
 		 * First, let's clean the incoming tag text array, ensuring we have
 		 * a unique set of tag texts and slugs.
 		 */
@@ -483,14 +484,14 @@ ENDOFSQL;
 			/* Tags exist which match the text or the slug */
 			foreach ( $existing_tags as $existing_tag ) {
 				if ( in_array( $existing_tag->tag_text, array_keys( $clean_tags ) ) ) {
-					/* 
-					 * Tag text exists.  
-					 * Add the ID to the list of Tag IDs to add to the tag2post table 
+					/*
+					 * Tag text exists.
+					 * Add the ID to the list of Tag IDs to add to the tag2post table
 					 */
 					$tag_ids_to_post[]= $existing_tag->id;
-					/* 
-					 * We remove it from the clean_tags collection as we only 
-					 * want to add to the tags table those tags which don't already exist 
+					/*
+					 * We remove it from the clean_tags collection as we only
+					 * want to add to the tags table those tags which don't already exist
 					 */
 					unset( $clean_tags[$existing_tag->tag_text] );
 				}
@@ -511,7 +512,7 @@ ENDOFSQL;
 		/*
 		 * OK, at this point, we have two "clean" collections.  $clean_tags
 		 * contains an associative array of tags we need to add to the main tags
-		 * table.  $tag_ids_to_post is an array of tag ID values that we will 
+		 * table.  $tag_ids_to_post is an array of tag ID values that we will
 		 * attempt to add to the tag2post mapping table.
 		 *
 		 * First, let's add the new tags to the tags table...
@@ -822,9 +823,9 @@ ENDOFSQL;
 	/**
 	 * Handle calls to this Post object that are implemented by plugins
 	 * @param string $name The name of the function called
-	 * @param array $args Arguments passed to the function call	 
-	 * @return mixed The value returned from any plugin filters, null if no value is returned	 
-	 **/	 
+	 * @param array $args Arguments passed to the function call
+	 * @return mixed The value returned from any plugin filters, null if no value is returned
+	 **/
 	public function __call( $name, $args )
 	{
 		array_unshift($args, 'post_call_' . $name, null, $this);
