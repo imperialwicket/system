@@ -58,20 +58,18 @@ class HabariDateTime extends DateTime
 		elseif ($time instanceOf DateTime) {
 			$time = $time->format('U');
 		}
+		elseif ($time == null) {
+			$time = 'now';
+		}
+		elseif (is_numeric($time)) {
+			$time = '@' . $time;
+		}
 
 		if ($timezone === null) {
 			$timezone = Locale::get_timezone();
 		}
 
-		if ($time != '') {
-			// Should we limit the number of integer in the Unix timestamp?
-			if (preg_match('%[0-9]+%', $time)) {
-				$time = '@' . $time;
-			}
-		}
-
-		$datetime = new HabariDateTime($time);
-		$datetime->setTimezone(new DateTimeZone($timezone));
+		$datetime = new HabariDateTime($time, new DateTimeZone($timezone));
 		return $datetime;
 	}
 

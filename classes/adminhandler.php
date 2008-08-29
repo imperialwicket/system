@@ -396,7 +396,7 @@ class AdminHandler extends ActionHandler
 				$post->pubdate= HabariDateTime::date_create();
 			}
 			else {
-				$post->pubdate= HabariDateTime::date_create($pubdate);
+				$post->pubdate= HabariDateTime::date_create($form->pubdate->value);
 			}
 
 			$post->status= $form->status->value;
@@ -527,7 +527,7 @@ class AdminHandler extends ActionHandler
 		$settings->comments_enabled->value = $post->info->comments_disabled ? false : true;
 
 		$settings->append('text', 'pubdate', 'null:null', _t('Publication Time'), 'tabcontrol_text');
-		$settings->pubdate->value = date('Y-m-d H:i:s', strtotime($post->pubdate));
+		$settings->pubdate->value = $post->pubdate->format('Y-m-d H:i:s');
 
 		$settings->append('text', 'newslug', 'null:null', _t('Content Address'), 'tabcontrol_text');
 		$settings->newslug->value = $post->slug;
