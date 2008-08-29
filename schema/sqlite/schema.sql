@@ -190,12 +190,12 @@ CREATE TABLE {$prefix}object_terms (
 );
 
 CREATE TABLE {$prefix}object_types (
-  id INTEGER PRIMARY KEY NOT NULL,
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   name VARCHAR(50)
 );
 
-INSERT INTO {$prefix}object_types VALUES
-  (0, 'post');
+INSERT INTO {$prefix}object_types (name) VALUES
+  ('post');
 
 CREATE TABLE {$prefix}tokens (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -206,31 +206,31 @@ CREATE UNIQUE INDEX IF NOT EXISTS name ON {$prefix}tokens(name);
 
 CREATE TABLE {$prefix}post_tokens (
   post_id INTEGER NOT NULL,
-  token_id INTEGER NOT NULL
+  token_id INTEGER NOT NULL,
+  PRIMARY KEY (post_id, token_id)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS post_token ON {$prefix}post_tokens(post_id,token_id);
 
 CREATE TABLE {$prefix}group_token_permissions (
   group_id INTEGER NOT NULL,
   token_id INTEGER NOT NULL,
-  permission_flag TINYINT UNSIGNED NOT NULL
+  permission_id TINYINT UNSIGNED NOT NULL,
+  PRIMARY KEY (group_id, token_id)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS group_permission ON {$prefix}group_token_permission(group_id,token_id);
 
 CREATE TABLE {$prefix}user_token_permissions (
   user_id INTEGER NOT NULL,
   token_id INTEGER NOT NULL,
-  permission_flag TINYINT UNSIGNED NOT NULL
+  permission_id TINYINT UNSIGNED NOT NULL,
+  PRIMARY KEY (user_id, token_id)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS user_permission ON {$prefix}user_token_permissions(user_id,token_id);
 
 CREATE TABLE {$prefix}permissions (
-  permission_flag TINYINT UNSIGNED PRIMARY KEY NOT NULL,
+  id TINYINT UNSIGNED PRIMARY KEY AUTOINCREMENT NOT NULL,
   description VARCHAR(255) NOT NULL
 );
 
-INSERT INTO {$prefix}permissions VALUES
-  (0, 'denied'),
-  (1, 'read'),
-  (2, 'write'),
-  (3, 'full');
+INSERT INTO {$prefix}permissions (description) VALUES
+  ('denied'),
+  ('read'),
+  ('write'),
+  ('full');

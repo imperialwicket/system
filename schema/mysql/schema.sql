@@ -228,7 +228,7 @@ CREATE TABLE {$prefix}post_tokens (
 CREATE TABLE {$prefix}group_token_permissions (
   group_id INT UNSIGNED NOT NULL,
   token_id INT UNSIGNED NOT NULL,
-  permission_flag TINYINT UNSIGNED NOT NULL,
+  permission_id TINYINT UNSIGNED NOT NULL,
   PRIMARY KEY (group_id, token_id)
 );
 
