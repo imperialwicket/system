@@ -186,7 +186,7 @@ CREATE TABLE {$prefix}object_terms (
   object_id INTEGER NOT NULL,
   term_id INTEGER NOT NULL,
   object_type_id INTEGER NOT NULL,
-  PRIMARY KEY (post_id,term_id)
+  PRIMARY KEY (object_id,term_id)
 );
 
 CREATE TABLE {$prefix}object_types (
