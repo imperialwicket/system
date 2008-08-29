@@ -202,12 +202,13 @@ CREATE TABLE {$prefix}object_terms (
 );
 
 CREATE TABLE {$prefix}object_types (
-  id INT UNSIGNED NOT NULL,
-  name VARCHAR(50)
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(50),
+  PRIMARY KEY (id)
 );
 
-INSERT INTO {$prefix}object_types VALUES
-  (0, 'post');
+INSERT INTO {$prefix}object_types (name) VALUES
+  ('post');
 
 CREATE TABLE {$prefix}tokens (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -221,32 +222,32 @@ CREATE TABLE {$prefix}tokens (
 CREATE TABLE {$prefix}post_tokens (
   post_id INT UNSIGNED NOT NULL,
   token_id INT UNSIGNED NOT NULL,
-  UNIQUE INDEX post_token (post_id,token_id)
+  PRIMARY KEY (post_id, token_id)
 );
 
 CREATE TABLE {$prefix}group_token_permissions (
   group_id INT UNSIGNED NOT NULL,
   token_id INT UNSIGNED NOT NULL,
   permission_flag TINYINT UNSIGNED NOT NULL,
-  UNIQUE INDEX group_permission (group_id,token_id)
+  PRIMARY KEY (group_id, token_id)
 );
 
 CREATE TABLE {$prefix}user_token_permissions (
   user_id INT UNSIGNED NOT NULL,
   token_id INT UNSIGNED NOT NULL,
-  permission_flag TINYINT UNSIGNED NOT NULL,
-  UNIQUE INDEX user_permission (user_id,token_id)
+  permission_id TINYINT UNSIGNED NOT NULL,
+  PRIMARY KEY (user_id, token_id)
 );
 
 CREATE TABLE {$prefix}permissions (
-  permission_flag TINYINT UNSIGNED NOT NULL,
+  id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
   description VARCHAR(255) NOT NULL,
-  PRIMARY KEY (permission_flag)
+  PRIMARY KEY (id)
 );
 
-INSERT INTO {$prefix}permissions VALUES
-  (0, 'denied'),
-  (1, 'read'),
-  (2, 'write'),
-  (3, 'full');
+INSERT INTO {$prefix}permissions (description) VALUES
+  ('denied'),
+  ('read'),
+  ('write'),
+  ('full');
 

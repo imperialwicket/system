@@ -282,3 +282,9 @@ CREATE TABLE {$prefix}permissions (
   PRIMARY KEY (id)
 );
 ALTER SEQUENCE {$prefix}permissions_pkey_seq OWNED BY {$prefix}permissions.id;
+
+INSERT INTO {$prefix}permissions (description) VALUES
+  ('denied'),
+  ('read'),
+  ('write'),
+  ('full');
