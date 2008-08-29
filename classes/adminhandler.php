@@ -207,13 +207,14 @@ class AdminHandler extends ActionHandler
 
 		$option_items[_t('Language')] = array(
 			'locale' => array(
-				'label' => _t('Locale'),
-				'type' => 'text',
-				'helptext' => _t('International language code'),
-				),
-			);
+				'label' => _t( 'Locale' ),
+				'type' => 'select',
+				'selectarray' => array_merge( array( '' => 'default' ), array_combine( Locale::list_all(), Locale::list_all() ) ),
+				'helptext' => 'International language code',
+			)
+		);
 
-		/*$option_items[_t('Presentation')] = array(
+			/*$option_items[_t('Presentation')] = array(
 			'encoding' => array(
 				'label' => _t('Encoding'),
 				'type' => 'select',
@@ -263,6 +264,7 @@ class AdminHandler extends ActionHandler
 	{
 		Session::notice( _t( 'Successfully updated options' ) );
 		$form->save();
+		Utils::redirect();
 	}
 
 	/**
@@ -455,7 +457,8 @@ class AdminHandler extends ActionHandler
 
 	function form_publish($post)
 	{
-		$form = new FormUI('publishform');
+		$form = new FormUI('create-content');
+		$form->set_option( 'form_action', URL::get('admin', 'page=publish' ) );
 		$form->class[] = 'create';
 
 		if(isset($this->handler_vars['slug'])) {
@@ -471,8 +474,10 @@ class AdminHandler extends ActionHandler
 		$form->title->value = $post->title;
 		$this->theme->admin_page = sprintf(_t('Publish %s'), ucwords(Post::type_name($post->content_type)));
 		// Create the silos
-		$form->append('silos', 'silos');
-		$form->silos->silos = Media::dir();
+		if ( count( Plugins::get_by_interface( 'MediaSilo' ) ) ) {
+			$form->append('silos', 'silos');
+			$form->silos->silos = Media::dir();
+		}
 
 		// Create the Content field
 		$form->append('textarea', 'content', 'null:null', _t('Content'), 'admincontrol_textarea');
@@ -483,7 +488,7 @@ class AdminHandler extends ActionHandler
 		// Create the tags field
 		$form->append('text', 'tags', 'null:null', _t('Tags, separated by, commas'), 'admincontrol_text');
 		$form->tags->tabindex = 3;
-		$form->tags->value = implode(',', $post->tags);
+		$form->tags->value = implode(', ', $post->tags);
 
 		// Create the splitter
 		$publish_controls = $form->append('tabs', 'publish_controls');
@@ -493,11 +498,11 @@ class AdminHandler extends ActionHandler
 
 		$tags_buttons= $tagselector->append('wrapper', 'tags_buttons');
 		$tags_buttons->class='container';
-		$tags_buttons->append('static', 'clearbutton', '<p class="column span-5"><input type="button" value="'._t('Clear').'" id="clear"></p>');
+		$tags_buttons->append('static', 'clearbutton', '<p class="span-5"><input type="button" value="'._t('Clear').'" id="clear"></p>');
 
 		$tags_list= $tagselector->append('wrapper', 'tags_list');
 		$tags_list->class=' container';
-		$tags_list->append('static', 'tagsliststart', '<ul id="tag-list" class="column span-19">');
+		$tags_list->append('static', 'tagsliststart', '<ul id="tag-list" class="span-19">');
 
 		$tags= Tags::get();
 		$max= Tags::max_count();
@@ -536,6 +541,7 @@ class AdminHandler extends ActionHandler
 
 		// Create the Save button
 		$buttons->append('submit', 'save', _t('Save'), 'admincontrol_submit');
+		$buttons->save->tabindex = 4;
 
 		// Add required hidden controls
 		$form->append('hidden', 'content_type', 'null:null');
@@ -548,7 +554,7 @@ class AdminHandler extends ActionHandler
 		Plugins::act('form_publish', $form, $post);
 
 		// Put the form into the theme
-		$theme->form = $form->get();
+		$this->theme->form = $form->get();
 		return $form;
 	}
 

@@ -6,10 +6,19 @@
  * @package Habari
  */
 
-/**
- * @todo This stuff needs to move into the custom theme class:
- */
+// We must tell Habari to use MyTheme as the custom theme class:
+define( 'THEME_CLASS', 'MyTheme' );
 
+/**
+ * A custom theme for K2 output
+ */
+class MyTheme extends Theme
+{
+	/**
+	 * Execute on theme init to apply these filters to output
+	 */
+	public function action_init_theme()
+	{
 // Apply Format::autop() to post content...
 Format::apply( 'autop', 'post_content_out' );
 // Apply Format::autop() to comment content...
@@ -19,17 +28,9 @@ Format::apply( 'tag_and_list', 'post_tags_out' );
 
 // Remove the comment on the following line to limit post length on the home page to 1 paragraph or 100 characters
 //Format::apply_with_hook_params( 'more', 'post_content_out', _t('more'), 100, 1 );
-
-// We must tell Habari to use MyTheme as the custom theme class:
-define( 'THEME_CLASS', 'MyTheme' );
+	}
 
 /**
- * A custom theme for K2 output
- */
-class MyTheme extends Theme
-{
-
-	/**
 	 * Add additional template variables to the template output.
 	 *
 	 *  You can assign additional output values in the template here, instead of
@@ -56,6 +57,10 @@ class MyTheme extends Theme
 		
 		if( !$this->template_engine->assigned( 'pages' ) ) {
 			$this->assign('pages', Posts::get( array( 'content_type' => 'page', 'status' => Post::status('published'), 'nolimit' => 1 ) ) );
+		}
+		if( !$this->template_engine->assigned( 'page' ) ) {
+			$page = Controller::get_var( 'page' );
+			$this->assign('page', isset( $page ) ? $page : 1 );
 		}
 		parent::add_template_vars();
 	}

@@ -6,7 +6,7 @@
 		<span class="checkbox title pct25">
 			<input type="checkbox" class="checkbox" name="comment_ids[<?php echo $comment->id; ?>]" id="comments_ids[<?php echo $comment->id; ?>]" value="1">
 			<?php if($comment->url != ''): ?>
-			<a href="#" class="author edit-author"><?php echo $comment->name; ?></a>
+			<a href="#" class="author edit-author" title="<?php echo $comment->name; ?>"><?php echo $comment->name; ?></a>
 			<?php else: ?>
 			<?php echo $comment->name; ?>
 			<?php endif; ?>
@@ -42,7 +42,7 @@
 				echo '<li><a class="edit-email" href="mailto:' . $comment->email . '">' . $comment->email . '</a></li>'."\r\n"; ?>
 			</ul>
 			<?php if ( $comment->status == Comment::STATUS_SPAM ) :?>
-				<p>Marked as spam</p>
+				<p><?php _e('Marked as spam'); ?></p>
 			<?php endif; ?>
 
 		</span>
@@ -53,6 +53,6 @@
 <?php 	endforeach; 
 else : ?>
 <div class="message none">
-	<p><?php echo _t('No comments could be found to match the query criteria.'); ?></p>
+	<p><?php _e('No comments could be found to match the query criteria.'); ?></p>
 </div>
 <?php endif; ?>

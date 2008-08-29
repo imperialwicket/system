@@ -1,8 +1,8 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
-	<title><?php _e('Login to '); ?><?php Options::out( 'title' ); ?></title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title><?php printf( _t('Login to %s'), Options::get( 'title' ) ); ?></title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 
 	<link rel="stylesheet" href="<?php Site::out_url('habari'); ?>/3rdparty/blueprint/screen.css" type="text/css" media="screen">
 	<link rel="stylesheet" href="<?php Site::out_url('habari'); ?>/3rdparty/blueprint/print.css" type="text/css" media="print">
@@ -41,10 +41,10 @@
 				<form method="post" action="<?php URL::out( 'user', array( 'page' => 'login' ) ); ?>">
 
 					<p>
-						<label for="habari_username" class="incontent"><?php _e('Name'); ?></label><input type="text" name="habari_username" id="habari_username"<?php if(isset($habari_username)) { ?> value="<?php echo $habari_username; ?>"<?php } ?> class="styledformelement">
+						<label for="habari_username" class="incontent abovecontent"><?php _e('Name'); ?></label><input type="text" name="habari_username" id="habari_username"<?php if(isset($habari_username)) { ?> value="<?php echo $habari_username; ?>"<?php } ?> placeholder="<?php _e('name'); ?>" class="styledformelement">
 					</p>
 					<p>
-						<label for="habari_password" class="incontent"><?php _e('Password'); ?></label><input type="password" name="habari_password" id="habari_password" class="styledformelement">
+						<label for="habari_password" class="incontent abovecontent"><?php _e('Password'); ?></label><input type="password" name="habari_password" id="habari_password" placeholder="<?php _e('password'); ?>" class="styledformelement">
 					</p>
 					<?php Plugins::act( 'theme_loginform_controls' ); ?>
 					<p>
@@ -63,8 +63,14 @@
 	Stack::out( 'admin_footer_javascript', ' <script src="%s" type="text/javascript"></script>'."\r\n" );
 ?>
 	<script type="text/javascript">
-	jQuery(document).ready(function() {
+	var password_label;
+	$(document).ready( function() {
 		<?php Session::messages_out( true, array( 'Format', 'humane_messages' ) ); ?>
+		password_label = $('label[for=habari_password]');
+		// to fix autofill issues, we need to check the password field on every keyup
+		$('#habari_username').keyup( function() {
+			setTimeout( "labeler.check( password_label );", 10 ); 
+		} );
 	})
   </script>
 <?php

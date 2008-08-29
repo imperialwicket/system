@@ -2,11 +2,11 @@
 <!--begin content-->
 	<div id="content">
 		<!--begin primary content-->
-		<div id="primaryContent">
+		<div id="primaryContent" class="span-15 append-2">
 			<!--begin loop-->
 			<?php foreach ( $posts as $post ) { ?>
 				<div id="post-<?php echo $post->id; ?>" class="<?php echo $post->statusname; ?>">
-						<h2><a href="<?php echo $post->permalink; ?>" title="<?php echo $post->title; ?>"><?php echo $post->title_out; ?></a></h2>
+						<h2 class="prepend-2"><a href="<?php echo $post->permalink; ?>" title="<?php echo $post->title; ?>"><?php echo $post->title_out; ?></a></h2>
 							<div class="cal">
 								<span class="calyear"><?php echo $post->pubdate->year; ?></span><br><span class="calday"><?php echo $post->pubdate->mday; ?></span><br><span class="calmonth"><?php echo $post->pubdate->month; ?></span>
 							</div>		

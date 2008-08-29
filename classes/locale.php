@@ -115,9 +115,49 @@ class Locale
 	 **/
 	private static function load_domain( $domain )
 	{
-		$file= HABARI_PATH . '/system/locale/' . self::$locale . '/LC_MESSAGES/' . $domain . '.mo';
+		$file_end = self::$locale . '/LC_MESSAGES/' . $domain . '.mo';
+
+		if (file_exists( Site::get_dir( 'config' ) . '/locale/' . $file_end ) ) {
+			$file = Site::get_dir( 'config' ) . '/locale/' . $file_end;
+		}
+		else if (file_exists( HABARI_PATH . '/user/locale/' . $file_end ) ) {
+			$file = HABARI_PATH . '/user/locale/' . $file_end;
+		}
+		else if (file_exists( HABARI_PATH . '/3rdparty/locale/' . $file_end ) ) {
+			$file = HABARI_PATH . '/3rdparty/locale/' . $file_end;
+		}
+		else {
+			$file = HABARI_PATH . '/system/locale/' . $file_end;
+		}
 
 		return self::load_file( $domain, $file );
+	}
+
+	/**
+	* function list_all
+	 * Retrieves an array of the Habari locales that are installed
+	 * 
+	 * @return array. An array of Habari locales in the installation
+	 **/
+	public static function list_all()
+	{
+		$localedirs = array( HABARI_PATH . '/system/locale/', HABARI_PATH . '/3rdparty/locale/', HABARI_PATH . '/user/locale/' );
+		if ( Site::CONFIG_LOCAL != Site::$config_type ) {
+			// include site-specific locales
+			$localedirs[] = Site::get_dir( 'config' ) . '/locale/';
+		}
+
+		$dirs= array();
+		foreach ( $localedirs as $localedir ) {
+			if ( file_exists( $localedir ) ) {
+				$dirs = array_merge( $dirs, Utils::glob( $localedir . '*', GLOB_ONLYDIR | GLOB_MARK ) );
+			}
+		}
+		$dirs = array_filter( $dirs, create_function('$a', 'return file_exists($a . "LC_MESSAGES/habari.mo");') );
+
+		$locales = array_map( 'basename', $dirs );
+		ksort( $locales );
+		return $locales;
 	}
 
 	/**
@@ -304,7 +344,7 @@ class Locale
 			$t = $text;
 		}
 
-		if(!empty($args)) {
+		if(!empty($args) && is_array($args)) {
 			array_unshift($args, $t);
 			$t = call_user_func_array('sprintf', $args);
 		}

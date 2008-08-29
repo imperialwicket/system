@@ -21,6 +21,7 @@ var dashboard = {
 		    matches = $(this).parents('.module').attr('id').split( ':', 2 ); 
 		    dashboard.remove( matches[0] ); 
 		}); 
+		findChildren();
 	},
 	update: function() {
 		spinner.start();
@@ -140,7 +141,7 @@ var inEdit = {
 		editables.each(function() {
 			var classes= $(this).attr('class');
 			destination= inEdit.getDestination(classes);
-			var val= $(this).text();
+			var val= $(this).html();
 			var width= $(this).width();
 			
 			$(this).hide();
@@ -150,7 +151,7 @@ var inEdit = {
 				field.height(100)
 					.attr('class', classes)
 					.removeClass('pct75')
-					.width(width - 5);
+					.width(width - 13);
 			} else {
 				var field= $('<input></input>');
 				field.attr('class', classes)
@@ -166,22 +167,13 @@ var inEdit = {
 		$('ul.dropbutton li.submit', parent).addClass('first-child');
 		$('ul.dropbutton li.cancel', parent).addClass('last-child');
 		dropButton.init();
-		$('ul.dropbutton a', parent).css('color', 'inherit');
-		$('ul.dropbutton', parent).animate({
-			backgroundColor: '#FFFFCC',
-			color: '#333333'
-		}, 100, 'linear', function() {
-			$('ul.dropbutton', parent).animate({
-				backgroundColor: '#333333',
-				color: 'white'
-			},10000);
-		});
-				
+
+		dropButton.init();
 		var submit= $('<input type="submit"></input>')
-			.addClass('inEditSubmit')
-			.val('Update')
-			.hide()
-			.appendTo(parent);
+						.addClass('inEditSubmit')
+						.val('Update')
+						.hide()
+						.appendTo(parent);
 		
 		$("form").submit(function() {
 			inEdit.update();
@@ -238,7 +230,7 @@ var inEdit = {
 // Item Management
 var itemManage = {
 	init: function() {
-		if($('.manage.users, .page-options, .page-user').length != 0) {
+		if($('.page-users, .page-options, .page-user').length != 0) {
 			$("input#search").keyup(function (e) {
 				var str= $('input#search').val();
 				itemManage.simpleFilter(str);
@@ -250,7 +242,7 @@ var itemManage = {
 		itemManage.initItems();
 
 		$('.item.controls input[type=checkbox]').change(function () {
-			if($('.item.controls span.selectedtext').hasClass('all')) {
+			if($('.item.controls label.selectedtext').hasClass('all')) {
 				itemManage.uncheckAll();
 			} else {
 				itemManage.checkAll();
@@ -281,44 +273,35 @@ var itemManage = {
 		itemManage.changeItem();
 	},
 	selected: [],
+	searchCache: [],
+	searchRows: [],
 	simpleFilter: function( search ) {
-		search= search.toLowerCase();
+		search = $.trim( search.toLowerCase() );
 		
-		var count= 0;
-		$('li.item, a.tag, div.settings div.item').each(function() {
-			var labels= $('.user, span', this);
-			var text= $(this).text().toLowerCase();
-			if((text.search( search ) == -1) && (text != search)) {
-				$(this).hide();
-				$(this).addClass('hidden');
+		// cache search items on first call
+		if ( itemManage.searchCache.length == 0 ) {
+			itemManage.searchRows = $('li.item, a.tag, div.settings');
+			itemManage.searchCache = itemManage.searchRows.map(function() {
+				return $(this).text().toLowerCase();
+			});
+		}
+
+		itemManage.searchCache.each(function(i) {
+			if( this.search( search ) == -1 ) {
+				$(itemManage.searchRows[i]).addClass('hidden');
 			} else {
-				count= count + 1;
-				$(this).show();
-				$(this).removeClass('hidden');
+				$(itemManage.searchRows[i]).removeClass('hidden');
 			}
 		});
 		
 		if($('div.settings').length != 0) {
 			$('select[name=navigationdropdown]').val('all');
-			
-			$('div.settings.container:not(.addnewuser)').each(function() { 
-				if(($('div.item:not(.hidden)', this).length == 0) && ($('h2', this).text().toLowerCase().search( search ) == -1)) {
-					$(this).hide().addClass('hidden');
-				} else {
-					$(this).show().removeClass('hidden');
-				}
-				
-				if($('h2', this).text().toLowerCase().search( search ) != -1) {
-					$('div.item', this).each(function() {
-						$(this).show().removeClass('hidden');
-					});
-				}
-			});
 		}
 		
+		/*
 		if($('li.item').length != 0) {
 			itemManage.changeItem();
-		}
+		}*/
 	},
 	changeItem: function() {
 		var selected = {};
@@ -353,22 +336,22 @@ var itemManage = {
 			$('.item.controls input[type=checkbox]').each(function() {
 				this.checked = 0;
 			});
-			$('.item.controls span.selectedtext').addClass('none').removeClass('all').text('None selected');
+			$('.item.controls label.selectedtext').addClass('none').removeClass('all').text('None selected');
 		} else if(visible == $('.item:not(.hidden):not(.ignore) .checkbox input[type=checkbox]').length) {
 			$('.item.controls input[type=checkbox]').each(function() {
 				this.checked = 1;
 			});
-			$('.item.controls span.selectedtext').removeClass('none').addClass('all').text('All selected');
+			$('.item.controls label.selectedtext').removeClass('none').addClass('all').text('All ' + count + ' selected');
 			if(visible != count) {
-				$('.item.controls span.selectedtext').text('All visible selected (' + count + ' total)');
+				$('.item.controls label.selectedtext').text('All visible selected (' + count + ' total)');
 			}
 		} else {
 			$('.item.controls input[type=checkbox]').each(function() {
 				this.checked = 0;
 			});
-			$('.item.controls span.selectedtext').removeClass('none').removeClass('all').text(count + ' selected');
+			$('.item.controls label.selectedtext').removeClass('none').removeClass('all').text(count + ' selected');
 			if(visible != count) {
-				$('.item.controls span.selectedtext').text(count + ' selected (' + visible + ' visible)');
+				$('.item.controls label.selectedtext').text(count + ' selected (' + visible + ' visible)');
 			}
 		}
 	},
@@ -438,7 +421,7 @@ var itemManage = {
 		$.ajax({
 			type: 'POST',
 			url: itemManage.fetchURL,
-			data: '&search=' + liveSearch.input.val() + '&offset=' + offset + '&limit=' + limit,
+			data: '&search=' + liveSearch.getSearchText() + '&offset=' + offset + '&limit=' + limit,
 			dataType: 'json',
 			success: function(json) {
 				itemManage.fetchReplace.html(json.items);
@@ -450,16 +433,19 @@ var itemManage = {
 					itemManage.initItems();
 					$('.years').show();
 					timeline.reset();
+					$('input.checkbox').rangeSelect();
 				}
 				else {
 					spinner.stop();
 					itemManage.initItems();
+					$('input.checkbox').rangeSelect();
 				}
 				if ( itemManage.inEdit == true ) {
 					inEdit.init();
 					inEdit.deactivate();
 				}
 				findChildren();
+				spinner.stop();
 			}
 		});
 	}
@@ -471,17 +457,17 @@ var tagManage = {
 		// Return if we're not on the tags page
 		if(!$('.page-tags').length) return;
 
-		$('.tags .tag').click(function() {
+		$('.tag').click(function() {
 				$(this).toggleClass('selected');
 				tagManage.changeTag();
 				return false;
 			}
 		);
 
-		$('.tags.controls input.delete.button').click(function () {
+		$('.controls input.delete.button').click(function () {
 			tagManage.remove();
 		});
-		$('.tags.controls input.rename.button').click(function () {
+		$('.controls input.rename.button').click(function () {
 			tagManage.rename();
 		});
 
@@ -492,21 +478,21 @@ var tagManage = {
 		});
 	},
 	changeTag: function() {
-		count = $('.tags .tag.selected').length;
+		count = $('.tag.selected').length;
 
-		visible = $('.tags .tag.selected:not(.hidden)').length;
+		visible = $('.tag.selected:not(.hidden)').length;
 
 		if(count == 0) {
-			$('.tags.controls span.selectedtext').addClass('none').removeClass('all').text('None selected');
-		} else if(visible == $('.tags .tag:not(.hidden)').length) {
-			$('.tags.controls span.selectedtext').removeClass('none').addClass('all').text('All selected');
+			$('.controls label.selectedtext').addClass('none').removeClass('all').text('None selected');
+		} else if (visible == $('.tag:not(.hidden)').length) {
+			$('.controls label.selectedtext').removeClass('none').addClass('all').text('All selected');
 			if(visible != count) {
-				$('.tags.controls span.selectedtext').text('All visible selected (' + count + ' total)');
+				$('.controls label.selectedtext').text('All visible selected (' + count + ' total)');
 			}
 		} else {
-			$('.tags.controls span.selectedtext').removeClass('none').removeClass('all').text(count + ' selected');
+			$('.controls label.selectedtext').removeClass('none').removeClass('all').text(count + ' selected');
 			if(visible != count) {
-				$('.tags.controls span.selectedtext').text(count + ' selected (' + visible + ' visible)');
+				$('.controls label.selectedtext').text(count + ' selected (' + visible + ' visible)');
 			}
 		}
 	}
@@ -534,13 +520,13 @@ var timeline = {
 		if (!$('.timeline').length) return;
 
 		// Set up pointers to elements for speed
-		timeline.view= $('.timeline');
-		timeline.handle= $('.handle', timeline.view);
+		timeline.view = $('.timeline');
+		timeline.handle = $('.handle', timeline.view);
 
 		// Get an array of posts per month
-		timeline.monthData= [0];
-		timeline.monthWidths= [0];
-		timeline.totalCount= 0;
+		timeline.monthData = [0];
+		timeline.monthWidths = [0];
+		timeline.totalCount = 0;
 		$('.years .months span').each(function(i) {
 			timeline.monthData[i] = $(this).width();
 			timeline.monthWidths[i] = $(this).parent().width() + 1; // 1px border
@@ -551,22 +537,21 @@ var timeline = {
 		var timelineWidth = 0;
 		if ( $.browser.msie ) {
 			jQuery(timeline.monthWidths).each(function() { timelineWidth += this; } );
-			$('.years').width( timelineWidth );
-		}
-		else {
+			$('.years').width(timelineWidth);
+		} else {
 			timelineWidth = $('.years').width();
 		}
 
 		// check for a timeline larger than its view
-		timeline.overhang= ( timelineWidth > viewWidth ) ? timelineWidth - viewWidth : 0;
-		var viewWidth= $('.timeline').width();
-		timeline.overhang= ( timelineWidth > viewWidth ) ? timelineWidth - viewWidth : 0;
+		timeline.overhang = ( timelineWidth > viewWidth ) ? timelineWidth - viewWidth : 0;
+		var viewWidth = $('.timeline').width();
+		timeline.overhang = ( timelineWidth > viewWidth ) ? timelineWidth - viewWidth : 0;
 
 		// Find the width which makes the loupe select 20 items
-		var handleWidth= timelineWidth - timeline.positionFromIndex( timeline.totalCount - 20 );
+		var handleWidth = timelineWidth - timeline.positionFromIndex( timeline.totalCount - 20 );
 
 		// Make the slider bounded by the view
-		var maxSliderValue= Math.min( viewWidth, timelineWidth ) - handleWidth;
+		var maxSliderValue = Math.min( viewWidth, timelineWidth ) - handleWidth;
 
 		/* Initialize the timeline handle. We need to do this before we create the slider because
 		 * at the end of the slider initializer, it calls slider('moveTo', startValue) which will
@@ -576,50 +561,45 @@ var timeline = {
 		timeline.do_search= false;
 
 		$('.track')
-		.width( $('.years').width() - timeline.overhang )
-		.slider({
-			handle: '.handle',
-			max: Math.max( 1, maxSliderValue ),
-			startValue: maxSliderValue,
-			axis: 'horizontal',
-			stop: function(event, ui) {
-				timeline.updateView();
-				if ( timeline.do_search ) {
-					var loupeInfo = timelineHandle.getLoupeInfo();
-					itemManage.fetch( loupeInfo.offset, loupeInfo.limit, false );
+			.width( $('.years').width() - timeline.overhang )
+			.slider({
+				handle: '.handle',
+				max: Math.max( 1, maxSliderValue ),
+				startValue: maxSliderValue,
+				axis: 'horizontal',
+				stop: function(event, ui) {
+					timeline.updateView();
+					if ( timeline.do_search ) {
+						var loupeInfo = timelineHandle.getLoupeInfo();
+						itemManage.fetch( loupeInfo.offset, loupeInfo.limit, false );
+					}
+					timelineHandle.updateLoupeInfo();
+				},
+				slide: function( event, ui) {
+					timeline.updateView();
 				}
-				timelineHandle.updateLoupeInfo();
-			},
-			slide: function( event, ui) {
-				timeline.updateView();
-			}
-		})
-		.unbind('click')
-		.bind('dblclick', function(e) { // Double-clicking on either side of the handle moves the handle to the clicked position.
-			// Dismiss clicks on handle
-			if ($(e.target).is('.handle')) return false;
+			})
+			.unbind('click')
+			.bind('dblclick', function(e) { // Double-clicking on either side of the handle moves the handle to the clicked position.
+				// Dismiss clicks on handle
+				if ($(e.target).is('.handle')) return false;
 
-			timeline.noJump = true;
-			clearTimeout(timeline.t1);
-			$('.track').slider('moveTo', e.layerX)
-		})
-		.bind('click', function(e) { // Clicking either side of the handle moves the handle its own length to that side.
+				timeline.noJump = true;
+				clearTimeout(timeline.t1);
+				$('.track').slider('moveTo', e.layerX)
+			})
+			.bind('click', function(e) { // Clicking either side of the handle moves the handle its own length to that side.
 
-			// Dismiss clicks on handle
-			if ($(e.target).is('.handle')) return false;
+				// Dismiss clicks on handle
+				if ($(e.target).is('.handle')) return false;
 
-			// Click to left or right of handle?
-			if (e.layerX < $('.track').slider('value') )
-				timeline.t1 = setTimeout('timeline.skipLoupeLeft()', 300);
-			else
-				timeline.t1 = setTimeout('timeline.skipLoupeRight()', 300);
-		})
-		.slider( 'moveTo', timelineWidth - handleWidth ); // a bug in the jQuery code requires us to explicitly do this in the case that startValue == 0
-
-		// Fix width of years, so they don't spill into the next year
-		$('.year > span').each( function() {
-			$(this).width( $(this).parents('.year').width() - 4 )
-		})
+				// Click to left or right of handle?
+				if (e.layerX < $('.track').slider('value') )
+					timeline.t1 = setTimeout('timeline.skipLoupeLeft()', 300);
+				else
+					timeline.t1 = setTimeout('timeline.skipLoupeRight()', 300);
+			})
+			.slider( 'moveTo', timelineWidth - handleWidth ); // a bug in the jQuery code requires us to explicitly do this in the case that startValue == 0
 
 		// update the do_search state variable
 		timeline.do_search= true;
@@ -713,7 +693,7 @@ var timeline = {
 		timeline.monthData= [0];
 		timeline.monthWidths= [0];
 		timeline.totalCount= 0;
-		$('.years .months span').each(function(i) {
+		$('.years .months span').each( function(i) {
 			timeline.monthData[i] = $(this).width();
 			timeline.monthWidths[i] = $(this).parent().width() + 1; // 1px border
 			timeline.totalCount += timeline.monthData[i];
@@ -743,6 +723,11 @@ var timeline = {
 		$('.track').width( $('.years').width() - timeline.overhang );
 		$('.handle').width( handleWidth + 'px' );
 
+		// Fix width of years, so they don't spill into the next year
+		$('.year > span').each( function() {
+			$(this).width( $(this).parents('.year').width() - 4 )
+		})
+
 		// reset the slider maxValue
 		$('.track').slider( 'setData', 'max', Math.max( 1, maxSliderValue ) );
 
@@ -761,7 +746,15 @@ var timelineHandle = {
 
 		/* force 'right' property to 'auto' so we can check in doDragLeft if we have fixed the 
 		 * right side of the handle */
-		timeline.handle.css('right', 'auto');
+		timeline.handle.css( 'right', 'auto' )
+
+
+		// Slide and fade in the handle
+		var handleLocation = parseInt(timeline.handle.css('left'));
+		timeline.handle
+//			.css( 'left', handleLocation - 250 )
+			.animate({ opacity: 1 /* , left: handleLocation */ }, 2000, 'swing');
+
 		// Resize Handle Left
 		$('.resizehandleleft')
 			.mousedown(function(e) {
@@ -814,9 +807,9 @@ var timelineHandle = {
 		return false;
 	},
 	getLoupeInfo: function() {
-		var cur_overhang= $('.track').offset().left - $('.years').offset().left;
+		var cur_overhang = $('.track').offset().left - $('.years').offset().left;
 		var loupeStartPosition = timeline.indexFromPosition( parseInt($('.handle').css('left')) + cur_overhang);
-		var loupeWidth= $('.handle').width();
+		var loupeWidth = $('.handle').width();
 		var loupeEndPosition= timeline.indexFromPosition( parseInt($('.handle').css('left')) + loupeWidth + cur_overhang );
 		
 		var loupeInfo = {
@@ -831,6 +824,11 @@ var timelineHandle = {
 		var loupeInfo = timelineHandle.getLoupeInfo();
 
 		$('.currentposition').text( loupeInfo.start +'-'+ loupeInfo.end +' of '+ timeline.totalCount );
+		if ($('.currentposition').css('opacity')) $('.currentposition').animate({opacity: 1}, 500)
+		
+		// Hide 'newer' and 'older' links as necessary
+		if (loupeInfo.start == 1) $('.navigator .older').animate({opacity: '0'}, 200); else $('.navigator .older').animate({opacity: '1'}, 200);
+		if (loupeInfo.end == timeline.totalCount) $('.navigator .newer').animate({opacity: '0'}, 200); else $('.navigator .newer').animate({opacity: '1'}, 200);
 	},
 	endDrag: function(e) {
 		timeline.noJump = true;
@@ -850,16 +848,6 @@ var timelineHandle = {
 		return false;
 	}
 }
-
-
-
-/* TIMELINE TODO:
-	- Consider step'd resize
-		- Problem: timeline length might not be suitable for steps, so at either end, the loupe might not fit.
-	- Draggable timeline
-	- Float month name if outside view
-	- Reinit slider (or do away with slider alltogether and gather the info manually)
-*/
 
 
 // SPINNER
@@ -894,11 +882,11 @@ var navigationDropdown = {
 		var selected = $('select[name=navigationdropdown]').val();
 		
 		if ( selected == 'all' ) {
-			$('.settings').show();
+			$('.settings').removeClass('hidden');
 		}
 		else {
-			$('.settings:not(#' + selected + ')').addClass('hidden').hide();
-			$('.settings#' + selected).removeClass('hidden').show();
+			$('.settings:not(#' + selected + ')').addClass('hidden');
+			$('.settings#' + selected).removeClass('hidden');
 		}
 	}
 }
@@ -1005,9 +993,10 @@ var theMenu = {
 		});
 
 		// Enter & Carrot
-		$.hotkeys.add('return', {propagate:true, disableInInput: true}, function(){
+		$.hotkeys.add('return', { propagate:true, disableInInput: true }, function() {
 			if ($('#menu').hasClass('hovering') == true && $('.carrot')) {
 				location = $('.carrot a').attr('href')
+				theMenu.blinkCarrot($('.carrot a').parent())
 			} else {
 				return false;
 			}
@@ -1017,10 +1006,14 @@ var theMenu = {
 		$('#menu ul li').each(function() {
 			var hotkey = $('a span.hotkey', this).text();
 			var href = $('a', this).attr('href');
-			if(hotkey) {
-				$.hotkeys.add(hotkey, {propagate:true, disableInInput: true}, function(){
+			var owner = this;
+			var blinkSpeed = 100;
+
+			if (hotkey) {
+				$.hotkeys.add(hotkey, { propagate: true, disableInInput: true }, function() {
 					if ($('#menu').hasClass('hovering') == true) {
 						location = href;
+						theMenu.blinkCarrot(owner)
 					} else {
 						return false;
 					}
@@ -1031,42 +1024,55 @@ var theMenu = {
 		// Display hotkeys
 		$('#menu a .hotkey').addClass('enabled');
 
+		$('#menu ul li a').click( function() {
+			theMenu.blinkCarrot(this);
+		})
+
 		// If menu is open and mouse is clicked outside menu, close menu.
 		$('html').click(function() {
 			if ($('#menu #menulist').css('display') == 'block') {
 				dropButton.hideMenu();
 			}
 		})
+	},
+	blinkCarrot: function(owner) {
+		spinner.start()
+		var blinkSpeed = 100;
+		$(owner).addClass('carrot').fadeOut(blinkSpeed).fadeIn(blinkSpeed).fadeOut(blinkSpeed).fadeIn(blinkSpeed, function() {
+			dropButton.hideMenu();
+		});
 	}
 }
 
 // LIVESEARCH
 var liveSearch = {
 	init: function() {
-		liveSearch.input= $('.search input');
-		liveSearch.searchPrompt= liveSearch.input.attr('placeholder');
+		liveSearch.input = $('.search input');
+		liveSearch.searchPrompt = liveSearch.input.attr('placeholder');
+		liveSearch.prevSearch = liveSearch.getSearchText();
 
 		liveSearch.input
 			.focus( function() {
-				if ( liveSearch.input.val() == liveSearch.searchPrompt ) {
+				if ( $.trim( liveSearch.input.val() ) == liveSearch.searchPrompt ) {
 					liveSearch.input.val('');
 				}
 			})
 			.blur( function () {
-				if (liveSearch.input.val() == '') {
+				if ( $.trim( liveSearch.input.val() ) == '' ) {
 					liveSearch.input.val( liveSearch.searchPrompt );
 				}
 			})
 			.keyup( function( event ) {
-				var code= event.keyCode;
+				var code = event.keyCode;
 
-				if ( liveSearch.input.val() == '') {
-					return false;
-				} else if ( code == 27 ) { // ESC key
+				if ( code == 27 ) { // ESC key
 					liveSearch.input.val('');
-				} else if ( code != 13 ) { // anything but enter
-					if ( liveSearch.timer) {
-						clearTimeout( liveSearch.timer);
+					$('.special_search a').removeClass('active');
+				}
+
+				if ( code != 13 ) { // anything but enter
+					if (liveSearch.timer) {
+						clearTimeout(liveSearch.timer);
 					}
 					liveSearch.timer = setTimeout( liveSearch.doSearch, 500);
 				}
@@ -1079,27 +1085,38 @@ var liveSearch = {
 	prevSearch: '',
 	input: null,
 	doSearch: function() {
-		if ( liveSearch.input.val() == liveSearch.prevSearch ) return;
+		if ( liveSearch.getSearchText() == liveSearch.prevSearch ) return;
 
-		liveSearch.prevSearch = liveSearch.input.val();
+		spinner.start();
+
+		liveSearch.prevSearch = liveSearch.getSearchText();
 		itemManage.fetch( 0, 20, true );
+	},
+	getSearchText: function() {
+		var search_txt = $.trim( liveSearch.input.val() );
+		if ( search_txt == liveSearch.searchPrompt ) {
+			return '';
+		}
+		return search_txt;
 	}
 }
+
 
 // SEARCH CRITERIA TOGGLE
 function toggleSearch() {
 	var re = new RegExp('\\s*' + $(this).attr('href').substr(1), 'gi');
 	if($('#search').val().match(re)) {
-		$('#search').val($('#search').val().replace(re, ''));
+		$('#search').val(liveSearch.getSearchText().replace(re, ''));
 		$(this).removeClass('active');
 	}
 	else {
-		$('#search').val($('#search').val() + ' ' + $(this).attr('href').substr(1));
+		$('#search').val(liveSearch.getSearchText() + ' ' + $(this).attr('href').substr(1));
 		$(this).addClass('active');
 	}
 	liveSearch.doSearch();
 	return false;
 }
+
 
 // RESIZABLE TEXTAREAS
 $.fn.resizeable = function(){
@@ -1128,205 +1145,83 @@ $.fn.resizeable = function(){
 }
 
 
-// Damn the lack of proper support for pseudo-classes!
+// RANGE SELECT - Courtesy of Barney Boisvert at http://www.barneyb.com/barneyblog/projects/jquery-checkbox-range-selection/
+$.fn.rangeSelect = function() {
+	var lastCheckbox = null;
+	var $spec = this;
+
+	$spec.bind("click", function(e) {
+		if (lastCheckbox != null && e.shiftKey) {
+			$spec.slice(
+				Math.min($spec.index(lastCheckbox), $spec.index(e.target)),
+				Math.max($spec.index(lastCheckbox), $spec.index(e.target)) + 1
+			).attr({checked: e.target.checked ? "checked" : ""});
+		}
+		lastCheckbox = e.target;
+	});
+	return $spec;
+ };
+
+
+// Home-made pseudo-classes
 function findChildren() {
 	$('div > .item:first-child, .modulecore .item:first-child, ul li:first-child').addClass('first-child')
 	$('div > .item:last-child, .modulecore .item:last-child, ul li:last-child').addClass('last-child')
 }
 
-/* ON PAGE STARTUP */
-String.prototype.trim = function() { return this.replace(/^\s+|\s+$/g, ''); }
+// code for making inline labels which then move above form inputs when the inputs have content
+var labeler = {
+	focus: null,
+	init: function() {
+		$('label.incontent').each( function() {
+			labeler.check(this);
 
-var tagskeyup;
-// initialize the timeline after window load to make sure CSS has been applied to the DOM
-$(window).load( function() {
-	timeline.init();
-});
-
-$(document).ready(function(){
-	// Initialize all sub-systems
-	dropButton.init();
-	theMenu.init();
-	dashboard.init();
-	inEdit.init();
-	itemManage.init();
-	tagManage.init();
-	pluginManage.init();
-	liveSearch.init();
-	findChildren();
-	navigationDropdown.init();
-
-	// Alternate the rows' styling.
-	$("table").each( function() {
-		$("tr:odd", this).not(".even").addClass("odd");
-		$("tr:even", this).not(".odd").addClass("even");
-	});
-
-	$("#oldmenu .menu-item").hover(
-		function(){ $("ul", this).fadeIn("fast"); },
-		function() { }
-	);
-
-	// Prevent all checkboxes to be unchecked.
-	$(".search_field").click(function(){
-		if($(".search_field:checked").size() == 0 && !$(this).attr('checked')) {
-			return false;
-		}
-	});
-
-	// Move labels into elements. Use with usability-driven care.
-	$('label.incontent').each(function(){
-
-		var ctl = '#' + $(this).attr('for');
-		if($(ctl).val() == '') {
-			$(ctl).addClass('islabeled');
-			$(this).addClass('overcontent');
-		} else {
-			$(ctl).addClass('islabeled'); 
-			$(this).addClass('abovecontent'); 
-		}
-		
-		$(this).click(function() {
-			$(ctl).focus();
-		})
-	});
-
-	$('.islabeled').focus(function(){
-		$('label[for='+$(this).attr('id')+']').removeClass('overcontent').addClass('abovecontent').show(); 
-	}).blur(function(){
-		if ($(this).val() == '') {
-			$('label[for='+$(this).attr('id')+']').addClass('overcontent').removeClass('abovecontent'); 
-		} else {
-			$('label[for='+$(this).attr('id')+']').removeClass('overcontent').addClass('abovecontent');
-		}
-	});
-
-	// Convert these links into buttons
-	$('a.link_as_button').each(function(){
-		$(this).after('<button onclick="location.href=\'' + $(this).attr('href') + '\';return false;">' + $(this).html() + '</button>').hide();
-	});
-
-
-	/* Make Textareas Resizable */
-	$('.resizable').resizeable();
-
-
-	/* Init Tabs, using jQuery UI Tabs */
-	$('.tabcontrol').tabs({ fx: { height: 'toggle', opacity: 'toggle' }, selected: null, unselect: true })
-	
-	/* Icons only for thin-width clients */
-	var width = $('#mediatabs li').length * $('#mediatabs li').width();
-	
-	if($('#title').width() < width) {
-		$('#mediatabs').addClass('iconify');
-	}
-	
-	// Tag Drawer: Add tag via click
-	$('#tag-list li').click(function() {
-		// here we set the current text of #tags to current for later examination
-		var current = $('#tags').val();
-		
-		// create a regex that finds the clicked tag in the input field
-		var replstr = new RegExp('\\s*"?' + $( this ).text() + '"?\\s*', "gi");
-
-		// check to see if the tag item we clicked has been clicked before...
-		if( $( this ).hasClass('clicked') ) {
-			// remove that tag from the input field
-			$( '#tags' ).val( current.replace(replstr, '') );
-			// unhighlight that tag
-			$(this).removeClass( 'clicked' );
-		}
-		else {
-			// if it hasn't been clicked, go ahead and add the clicked class
-			$(this).addClass( 'clicked' );
-			// be sure that the option wasn't already in the input field
-			if(!current.match(replstr) || $( '#tags.islabeled' ).size() > 0) {
-				// check to see if current is the default text
-				if( $( '#tags').val().length == 0 ) {
-					// and if it is, replace it with whatever we clicked
-					$( '#tags' ).removeClass('islabeled').val( $( this ).text() );
-					$('label[for=tags]').removeClass('overcontent').addClass('abovecontent').hide();
-				} else {
-					// else if we already have tag content, just append the new tag
-					if( $('#tags' ).val() != '' ) {
-						$( '#tags' ).val( current + "," + $( this ).text() );
-					} else {
-						$( '#tags' ).val( $( this ).text() );
-					}
-				}
-			}
-		}
-
-		// replace unneccessary commas
-		$( '#tags' ).val( $( '#tags' ).val().replace(new RegExp('^\\s*,\\s*|\\s*,\\s*$', "gi"), ''));
-		$( '#tags' ).val( $( '#tags' ).val().replace(new RegExp('\\s*,(\\s*,)+\\s*', "gi"), ','));
-		
-		resetTags();
-
-	});
-
-	$( '#tags' ).keyup(function(){
-		clearTimeout(tagskeyup);
-		tagskeyup = setTimeout(resetTags, 500);
-	});
-	
-	$('#tags').focus(function() {
-		$('#tags').addClass('focus');
-		}).blur(function() {
-			$('#tags').removeClass('focus');
+			// focus on the input when clicking on the label
+			$(this).click(function() {
+				$('#' + $(this).attr('for')).focus();
+			});
 		});
 
-	// Tag Drawer: Remove all tags.
-	$( '#clear' ).click( function() {
-		// so we nuke all the tags in the tag text field
-		$(' #tags ').val( '' );
-		$('label[for=tags]').removeClass('abovecontent').addClass('overcontent').show();
-		// and remove the clicked class from the tags in the manager
-		$( '#tag-list li' ).removeClass( 'clicked' );
-	});
-
-	// LOGIN: Focus cursor on 'Name'.
-	$('body.login #habari_username').focus();
-
-	// SEARCH: Set default special search terms and assign click handler
-	$('.special_search a')
-		.click(toggleSearch)
-		.each(function(){
-			var re = new RegExp($(this).attr('href').substr(1));
-			if($('#search').val().match(re)) {
-				$(this).addClass('active');
-			}
+		$('.islabeled').focus( function() {
+			labeler.focus= $(this);
+			labeler.aboveLabel($(this));
+		}).blur(function(){
+			labeler.focus= null;
+			labeler.check($('label[for='+$(this).attr('id')+']'));
 		});
+	},
+	check: function(label) {
+		var target = $('#' + $(label).attr('for'));
 
-	$('body').bind('ajaxSuccess', function(event, req, opts){
-		if(opts.dataType == 'json') {
-			eval('var cc=' + req.responseText);
-			if(cc.callback) {
-				cc.callback();
-			}
+		if( !target ) return;
+
+		if( labeler.focus != null && labeler.focus.attr('id') == target.attr('id') ) {
+			labeler.aboveLabel(target);
 		}
-	});
-
-});
-
-function resetTags() {
-	var current = $('#tags').val();
-
-	$('#tag-list li').each(function(){
-		replstr = new RegExp('\\s*"?' + $( this ).text() + '"?\\s*', "gi");
-		if(current.match(replstr)) {
-			$(this).addClass('clicked');
+		else if( target.val() == '' ) {
+			labeler.overLabel(target);
 		}
 		else {
-			$(this).removeClass('clicked');
+			labeler.aboveLabel(target);
 		}
-	});
-	
-	if(current.length == 0 && !$('#tags').hasClass('focus')) {
-		$('label[for=tags]').addClass('overcontent').removeClass('abovecontent').show();
+	},
+	aboveLabel: function(el) {
+		$(el).addClass('islabeled');
+		$('label[for=' + $(el).attr('id') + ']').removeClass('overcontent').removeClass('hidden').addClass('abovecontent');	
+	},
+	overLabel: function(el) {
+		$(el).addClass('islabeled');
+		// for Safari only, we can simply hide labels when we have provided a
+		// placeholder attribute
+		if ($.browser.safari && $(el).attr('placeholder') ) {
+			$('label[for=' + $(el).attr('id') + ']').addClass('hidden');
+		}
+		else {
+			$('label[for=' + $(el).attr('id') + ']').addClass('overcontent').removeClass('abovecontent');
+		}
 	}
-
 }
+
 
 // EDITOR INTERACTION
 habari.editor = {
@@ -1378,3 +1273,163 @@ habari.editor = {
 		}
 	}
 };
+
+
+// ON PAGE STARTUP
+var tagskeyup;
+
+$(window).load( function() {
+	// initialize the timeline after window load to make sure CSS has been applied to the DOM
+	timeline.init();
+
+	// Icons only for thin-width clients -- Must be run here to work properly in Safari
+	if ($('#title').width() < ($('#mediatabs li').length * $('#mediatabs li').width()))
+		$('#mediatabs').addClass('iconify');
+});
+
+$(document).ready(function(){
+	// Initialize all sub-systems
+	dropButton.init();
+	theMenu.init();
+	dashboard.init();
+	inEdit.init();
+	itemManage.init();
+	tagManage.init();
+	pluginManage.init();
+	liveSearch.init();
+	findChildren();
+	navigationDropdown.init();
+	labeler.init();
+
+	// Alternate the rows' styling.
+	$("table").each( function() {
+		$("tr:odd", this).not(".even").addClass("odd");
+		$("tr:even", this).not(".odd").addClass("even");
+	});
+
+	// Prevent all checkboxes to be unchecked.
+	$(".search_field").click(function(){
+		if($(".search_field:checked").size() == 0 && !$(this).attr('checked')) {
+			return false;
+		}
+	});
+
+	// Convert these links into buttons
+	$('a.link_as_button').each(function(){
+		$(this).after('<button onclick="location.href=\'' + $(this).attr('href') + '\';return false;">' + $(this).html() + '</button>').hide();
+	});
+
+	/* Make Textareas Resizable */
+	$('.resizable').resizeable();
+
+	/* Init Tabs, using jQuery UI Tabs */
+	$('.tabcontrol').tabs({ fx: { height: 'toggle', opacity: 'toggle' }, selected: null, unselect: true })
+
+	// Tag Drawer: Add tag via click
+	$('#tag-list li').click(function() {
+		// here we set the current text of #tags to current for later examination
+		var current = $('#tags').val();
+		
+		// create a regex that finds the clicked tag in the input field
+		var replstr = new RegExp('\\s*"?' + $( this ).text() + '"?\\s*', "gi");
+
+		// check to see if the tag item we clicked has been clicked before...
+		if( $( this ).hasClass('clicked') ) {
+			// remove that tag from the input field
+			$( '#tags' ).val( current.replace(replstr, '') );
+			// unhighlight that tag
+			$(this).removeClass( 'clicked' );
+		}
+		else {
+			// if it hasn't been clicked, go ahead and add the clicked class
+			$(this).addClass( 'clicked' );
+			// be sure that the option wasn't already in the input field
+			if(!current.match(replstr) || $( '#tags.islabeled' ).size() > 0) {
+				// check to see if current is the default text
+				if( $( '#tags').val().length == 0 ) {
+					// and if it is, replace it with whatever we clicked
+					$( '#tags' ).removeClass('islabeled').val( $( this ).text() );
+					$('label[for=tags]').removeClass('overcontent').addClass('abovecontent').hide();
+				} else {
+					// else if we already have tag content, just append the new tag
+					if( $('#tags' ).val() != '' ) {
+						$( '#tags' ).val( current + "," + $( this ).text() );
+					} else {
+						$( '#tags' ).val( $( this ).text() );
+					}
+				}
+			}
+		}
+
+		// replace unneccessary commas
+		$( '#tags' ).val( $( '#tags' ).val().replace(new RegExp('^\\s*,\\s*|\\s*,\\s*$', "gi"), ''));
+		$( '#tags' ).val( $( '#tags' ).val().replace(new RegExp('\\s*,(\\s*,)+\\s*', "gi"), ', '));
+		
+		resetTags();
+	});
+
+	$( '#tags' ).keyup(function(){
+		clearTimeout(tagskeyup);
+		tagskeyup = setTimeout(resetTags, 500);
+	});
+	
+	$('#tags').focus(function() {
+		$('#tags').addClass('focus');
+		}).blur(function() {
+			$('#tags').removeClass('focus');
+		});
+
+	// Tag Drawer: Remove all tags.
+	$('#clear').click( function() {
+		// so we nuke all the tags in the tag text field
+		$(' #tags ').val( '' );
+		$('label[for=tags]').removeClass('abovecontent').addClass('overcontent').show();
+		// and remove the clicked class from the tags in the manager
+		$( '#tag-list li' ).removeClass( 'clicked' );
+	});
+
+	// LOGIN: Focus cursor on 'Name'.
+	$('body.login #habari_username').focus();
+
+	// SEARCH: Set default special search terms and assign click handler
+	$('.special_search a')
+		.click(toggleSearch)
+		.each(function(){
+			var re = new RegExp($(this).attr('href').substr(1));
+			if($('#search').val().match(re)) {
+				$(this).addClass('active');
+			}
+		});
+
+	// Take care of AJAX calls
+	$('body').bind('ajaxSuccess', function(event, req, opts){
+		if(opts.dataType == 'json') {
+			eval('var cc=' + req.responseText);
+			if(cc.callback) {
+				cc.callback();
+			}
+		}
+	});
+
+	// Init shift-click for range select on checkboxes
+	$('input.checkbox').rangeSelect();
+});
+
+function resetTags() {
+	var current = $('#tags').val();
+
+	$('#tag-list li').each(function(){
+		replstr = new RegExp('\\s*"?' + $( this ).text() + '"?\\s*', "gi");
+		if(current.match(replstr)) {
+			$(this).addClass('clicked');
+		}
+		else {
+			$(this).removeClass('clicked');
+		}
+	});
+	
+	if(current.length == 0 && !$('#tags').hasClass('focus')) {
+		$('label[for=tags]').addClass('overcontent').removeClass('abovecontent').show();
+	}
+
+}
