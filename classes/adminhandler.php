@@ -36,9 +36,10 @@ class AdminHandler extends ActionHandler
 			}
 			exit;
 		}
+		/* TODO: update ACL class so that this works
 		if ( !$user->can( 'admin' ) ) {
 			die( _t( 'Permission denied.' ) );
-		}
+		}*/
 		$last_form_data= Session::get_set( 'last_form_data' ); // This was saved in the "if ( !$user )" above, UserHandler transferred it properly.
 		/* At this point, Controller has not created handler_vars, so we have to modify $_POST/$_GET. */
 		if ( isset( $last_form_data['post'] ) ) {
