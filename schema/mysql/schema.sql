@@ -241,11 +241,11 @@ CREATE TABLE {$prefix}user_token_permissions (
 
 CREATE TABLE {$prefix}permissions (
   id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  description VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL,
   PRIMARY KEY (id)
 );
 
-INSERT INTO {$prefix}permissions (description) VALUES
+INSERT INTO {$prefix}permissions (name) VALUES
   ('denied'),
   ('read'),
   ('write'),

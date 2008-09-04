@@ -227,14 +227,14 @@ CREATE TABLE {$prefix}user_token_permissions (
 
 CREATE TABLE {$prefix}permissions (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-  description VARCHAR(255) NOT NULL
+  name VARCHAR(255) NOT NULL
 );
 
-INSERT INTO {$prefix}permissions (description) VALUES
+INSERT INTO {$prefix}permissions (name) VALUES
   ('denied');
-INSERT INTO {$prefix}permissions (description) VALUES
+INSERT INTO {$prefix}permissions (name) VALUES
   ('read');
-INSERT INTO {$prefix}permissions (description) VALUES
+INSERT INTO {$prefix}permissions (name) VALUES
   ('write');
-INSERT INTO {$prefix}permissions (description) VALUES
+INSERT INTO {$prefix}permissions (name) VALUES
   ('full');

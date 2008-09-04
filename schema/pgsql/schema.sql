@@ -278,13 +278,14 @@ CREATE TABLE {$prefix}user_token_permissions (
 CREATE SEQUENCE {$preifx}permissions_pkey_seq;
 CREATE TABLE {$prefix}permissions (
   id INTEGER NOT NULL DEFAULT nextval('{$prefix}permissions_pkey_seq'),
-  description VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL,
   PRIMARY KEY (id)
 );
 ALTER SEQUENCE {$prefix}permissions_pkey_seq OWNED BY {$prefix}permissions.id;
 
-INSERT INTO {$prefix}permissions (description) VALUES
+INSERT INTO {$prefix}permissions (name) VALUES
   ('denied'),
   ('read'),
   ('write'),
   ('full');
+

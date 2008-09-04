@@ -43,7 +43,8 @@ class ACL {
 			return false;
 		}
 		Plugins::act('permission_create_before', $name, $description);
-		$result= DB::query('INSERT INTO {permissions} (name, description) VALUES (?, ?)', array( $name, $description) );
+		$result= DB::query('INSERT INTO {tokens} (name, description) VALUES (?, ?)', array( $name, $description) );
+
 		if ( ! $result ) {
 			// if it didn't work, don't bother trying to log it
 			return false;
@@ -65,22 +66,23 @@ class ACL {
 			return false;
 		}
 
-		// Use ids internall for permissions
-		$permission= ACL::permission_id( $permission );
+		// grab permission ID
+		$permission = ACL::permission_id( $permission );
 
-		$allow= true;
+		$allow = true;
 		// plugins have the opportunity to prevent deletion
-		$allow= Plugins::filter('permission_destroy_allow', $allow, $permission);
+		$allow = Plugins::filter('permission_destroy_allow', $allow, $permission);
 		if ( ! $allow ) {
 			return false;
 		}
 		Plugins::act('permission_destroy_before', $permission );
 		// capture the permission name
-		$name= DB::get_value( 'SELECT name FROM {permissions} WHERE id=?', array( $permission ) );
+		$name = DB::get_value( 'SELECT name FROM {tokens} WHERE id=?', array( $permission ) );
 		// remove all references to this permissions
-		$result= DB::query( 'DELETE FROM {groups_permissions} WHERE permission_id=?', array( $permission ) );
+		$result = DB::query( 'DELETE FROM {group_token_permissions} WHERE permission_id=?', array( $permission ) );
+		$result = DB::query( 'DELETE FROM {user_token_permissions} WHERE permission_id=?', array( $permission ) );
 		// remove this permission
-		$result= DB::query( 'DELETE FROM {permissions} WHERE permissions_id=?', array( $permission ) );
+		$result = DB::query( 'DELETE FROM {tokens} WHERE id=?', array( $permission ) );
 		if ( ! $result ) {
 			// if it didn't work, don't bother trying to log it
 			return false;
@@ -101,7 +103,7 @@ class ACL {
 		if ( ( 'id' != $order ) && ( 'name' != $order ) && ( 'description' != $order ) ) {
 			$order= 'id';
 		}
-		$permissions= DB::get_results( 'SELECT id, name, description FROM {permissions} ORDER BY ' . $order );
+		$permissions= DB::get_results( 'SELECT id, name, description FROM {tokens} ORDER BY ' . $order );
 		return $permissions ? $permissions : array();
 	}
 
@@ -115,7 +117,7 @@ class ACL {
 		if ( ! is_int( $id ) ) {
 			return false;
 		} else {
-			return DB::get_value( 'SELECT name FROM {permissions} WHERE id=?', array( $id ) );
+			return DB::get_value( 'SELECT name FROM {tokens} WHERE id=?', array( $id ) );
 		}
 	}
 
@@ -130,7 +132,7 @@ class ACL {
 			return $name;
 		}
 		$name= self::normalize_permission( $name );
-		return DB::get_value( 'SELECT id FROM {permissions} WHERE name=?', array( $name ) );
+		return DB::get_value( 'SELECT id FROM {tokens} WHERE name=?', array( $name ) );
 	}
 
 	/**
@@ -146,7 +148,7 @@ class ACL {
 			$query= 'name';
 			$permission= self::normalize_permission( $permission );
 		}
-		return DB::get_value( "SELECT description FROM {permissions} WHERE $query=?", array( $permission ) );
+		return DB::get_value( "SELECT description FROM {tokens} WHERE $query=?", array( $permission ) );
 	}
 
 	/**
@@ -163,7 +165,7 @@ class ACL {
 			$query= 'name';
 			$permission= self::normalize_permission( $permission );
 		}
-		return ( DB::get_value( "SELECT COUNT(id) FROM {permissions} WHERE $query=?", array( $permission ) ) > 0 );
+		return ( DB::get_value( "SELECT COUNT(id) FROM {tokens} WHERE $query=?", array( $permission ) ) > 0 );
 	}
 
 	/**
@@ -192,15 +194,20 @@ class ACL {
 	 * Determine whether a group can perform a specific action
 	 * @param mixed $group A group ID or name
 	 * @param mixed $permission An action ID or name
+	 * @param string $access Check for 'read', 'write', or 'full' access
 	 * @return bool Whether the group can perform the action
 	**/
-	public static function group_can( $group, $permission )
+	public static function group_can( $group, $permission, $access = 'full' )
 	{
 		// Use only numeric ids internally
-		$group= UserGroup::id( $group );
-		$permission= ACL::permission_id( $permission );
-		$result= DB::get_value( 'SELECT denied FROM {groups_permissions} WHERE permission_id=? AND group_id=?', array( $permission, $group ) );
-		if ( 0 === intval($result) ) {
+		$group = UserGroup::id( $group );
+		$permission = ACL::permission_id( $permission );
+		$sql = <<<SQL
+SELECT p.name FROM {group_token_permissions} gp, {permissions} p WHERE
+gp.group_id=? AND gp.token_id=? AND gp.permission_id=p.id;
+SQL;
+		$result = DB::get_values( $sql );
+		if ( $result == $access ) {
 			// the permission has been granted to this group
 			return true;
 		}
@@ -213,9 +220,10 @@ class ACL {
 	 * Determine whether a user can perform a specific action
 	 * @param mixed $user A user object, user ID or a username
 	 * @param mixed $permission A permission ID or name
+	 * @param string $access Check for 'read', 'write', or 'full' access
 	 * @return bool Whether the user can perform the action
 	**/
-	public static function user_can( $user, $permission )
+	public static function user_can( $user, $permission, $access = 'full' )
 	{
 		// Use only numeric ids internally
 		$permission= ACL::permission_id( $permission );
@@ -231,22 +239,53 @@ class ACL {
 			$user_id= $user->id;
 		}
 
-		// we select the "denied" value from all the permissions
-		// assigned to all the groups to which this user is a member.
-		// array_unique() should consolidate this down to, at most,
-		// two values: 0 and 1.
-		$permissions= DB::get_column('SELECT gp.denied from {groups_permissions} gp, {users_groups} g where gp.group_id = g.group_id and g.user_id=? and permission_id=?', array( $user_id, $permission ) );
+		/**
+		 * Jay Pipe's explanation of the following SQL
+		 * 1) Look into user_permissions for the user and the token.  
+		 * If exists, use that permission flag for the check. If not, 
+		 * go to 2)
+		 *
+		 * 2) Look into the group_permissions joined to 
+		 * users_groups for the user and the token.  Order the results 
+		 * by the permission_id flag. The lower the flag value, the 
+		 * fewest permissions that group has. Use the first record's 
+		 * permission flag to check the ACL.
+		 *
+		 * This gives the system very fine grained control and grabbing 
+		 * the permission flag and can be accomplished in a single SQL 
+		 * call.
+		 */ 
+		$sql = <<<SQL
+SELECT COALESCE(permission_id, 0) as permission_id
+FROM (
+(
+  SELECT permission_id
+  FROM {user_token_permissions}
+  WHERE user_id = :user_id
+  AND token_id = :token_id
+) AS up
+UNION ALL
+(
+  SELECT gp.permission_id
+  FROM {users_groups} ug
+  INNER JOIN {group_token_permissions} gp
+  ON ug.group_id = gp.group_id
+  AND ug.user_id = :user_id
+  AND gp.token_id = :token_id
+  ORDER BY permission_id ASC
+  LIMIT 1
+)
+)
+LIMIT 1; 
+SQL;
+		$result = DB::get_value( $sql, array( ':user_id' => $user_id, ':token_id' => $permission );
 
-		// if any group is explicitly denied access to this permission,
-		// this user is denied access to that permission
-		if ( in_array( 1, $permissions ) ) {
-			return false;
-		}
-		// if the permission is not explicitly denied, make sure it's
-		// explicitly granted.  If it is, the user can do this.
-		if ( in_array( 0, $permissions, true ) ) {
+		// TODO: modify above call to return the permission name rather than the ID
+		// For now, I'll just look for a result > 0
+		if ( $result !== FALSE && intval($result) > 0 ) {
 			return true;
 		}
+
 		// if the permission is neither denied nor granted, they're not
 		// allowed to do it.
 		return self::ACCESS_NONEXISTANT_PERMISSION;
