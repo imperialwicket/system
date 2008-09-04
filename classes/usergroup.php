@@ -7,9 +7,8 @@ class UserGroup extends QueryRecord
 {
 	// These arrays hold the current membership and permission settings for this group
 	// These arrays are NOT matched key and value pairs (the are not stored like array('foo'=>'foo') )
-	private $member_ids= array();
-	private $permissions_granted= array();
-	private $permissions_denied= array();
+	private $member_ids = array();
+	private $permissions = array();
 
 	/**
 	 * get default fields for this record
@@ -41,14 +40,12 @@ class UserGroup extends QueryRecord
 				$this->member_ids= $result;
 			}
 
-			if ( $results= DB::get_results( 'SELECT permission_id, denied FROM {groups_permissions} WHERE group_id=?', array( $this->id ) ) ) {
+			if ( $results= DB::get_results( 'SELECT token_id, permission_id FROM {group_token_permissions} WHERE group_id=?', array( $this->id ) ) ) {
 				foreach ( $results as $result ) {
-					if ( 1 === (int) $result->denied ) {
-						 $this->permissions_denied[]= $result->permission_id;
-					}
-					else {
-						 $this->permissions_granted[]= $result->permission_id;
-					}
+					$this->permissions[] = array(
+						'token_id' => $result->token_id,
+						'permission_id' => $result->permission_id,
+					);
 				}
 			}
 		}
@@ -128,13 +125,10 @@ class UserGroup extends QueryRecord
 		}
 
 		// Remove all permissions from this group in preparation for adding the current list
-		DB::query( 'DELETE FROM {groups_permissions} WHERE group_id=?', array( $this->id ) );
+		DB::query( 'DELETE FROM {group_token_permissions} WHERE group_id=?', array( $this->id ) );
 		// Add the current list of permissions into the group
-		foreach( $this->permissions_granted as $grant_id ) {
-			DB::query('INSERT INTO {groups_permissions} (group_id, permission_id, denied ) VALUES (?, ?, 0)', array( $this->id, $grant_id) );
-		}
-		foreach( $this->permissions_denied as $deny_id ) {
-			DB::query('INSERT INTO {groups_permissions} (group_id, permission_id, denied ) VALUES (?, ?, 1)', array( $this->id, $deny_id) );
+		foreach( $this->permissions as $permission ) {
+			DB::query('INSERT INTO {group_token_permissions} (group_id, token_id, permission_id) VALUES (?, ?, ?)', array( $this->id, $permission->token_id, $permission->permission_id ) );
 		}
 	}
 
@@ -152,7 +146,7 @@ class UserGroup extends QueryRecord
 
 		Plugins::act('usergroup_delete_before', $this);
 		// remove all this group's permissions
-		$results= DB::query( 'DELETE FROM {groups_permissions} WHERE group_id=?', array( $this->id ) );
+		$results= DB::query( 'DELETE FROM {group_token_permissions} WHERE group_id=?', array( $this->id ) );
 		// remove all this group's members
 		$results= DB::query( 'DELETE FROM {users_groups} WHERE group_id=?', array( $this->id ) );
 		// remove this group
@@ -173,11 +167,8 @@ class UserGroup extends QueryRecord
 			case 'members':
 				return $this->member_ids;
 				break;
-			case 'granted':
-				return $this->permissions_granted;
-				break;
-			case 'denied':
-				return $this->permissions_denied;
+			case 'permissions':
+				return $this->permissions;
 				break;
 			default:
 				return parent::__get( $param );
@@ -215,13 +206,13 @@ class UserGroup extends QueryRecord
 
 	/**
 	 * Assign one or more new permissions to this group
-	 * @param mixed A permission ID, name, or array of the same
+	 * @param mixed A permission token ID, name, or array of the same
 	**/
 	public function grant( $permissions )
 	{
 		$permissions = Utils::single_array( $permissions );
 		// Use ids internally for all permissions
-		$permissions = array_map(array('ACL', 'permission_id'), $permissions);
+		$permissions = array_map(array('ACL', 'token_id'), $permissions);
 		// Merge the new permissions
 		$this->permissions_granted = $this->permissions_granted + $permissions;
 		// List each permission exactly once
@@ -270,7 +261,7 @@ class UserGroup extends QueryRecord
 	**/
 	public function can( $permission )
 	{
-		$permission= ACL::permission_id( $permission );
+		$permission= ACL::token_id( $permission );
 		if ( in_array( $permission, $this->permissions_denied ) ) {
 			return false;
 		}

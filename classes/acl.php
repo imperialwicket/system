@@ -23,6 +23,25 @@ class ACL {
 	 **/
 	const ACCESS_NONEXISTANT_PERMISSION = true;
 
+	private static $permission_ids = array();
+
+	/**
+	 * Convert a permission access name (read, write, full, denied) into an ID
+	 * @param string The access name
+	 * @return mixed the ID of the permission, or boolean FALSE if it does not exist
+	 **/
+	public static function permission_id( $name )
+	{
+		if ( count( $access_ids ) == 0 ) {
+			$result = DB::query( 'SELECT id, name FROM {permissions};' );
+			foreach ( $result as $r ) {
+				$access_ids[$r->name] = $r->id;
+			}
+		}
+
+		return ( isset( $access_ids[$name] ) ? $access_ids[$name] : FALSE;
+	}
+
 	/**
 	 * Create a new permission, and save it to the Permissions table
 	 * @param string The name of the permission
@@ -62,12 +81,12 @@ class ACL {
 	public static function destroy_permission( $permission )
 	{
 		// make sure the permission exists, first
-		if ( ! ACL::permission_exists( $permission ) ) {
+		if ( ! self::token_exists( $permission ) ) {
 			return false;
 		}
 
-		// grab permission ID
-		$permission = ACL::permission_id( $permission );
+		// grab token ID
+		$permission = self::token_id( $permission );
 
 		$allow = true;
 		// plugins have the opportunity to prevent deletion
@@ -76,7 +95,7 @@ class ACL {
 			return false;
 		}
 		Plugins::act('permission_destroy_before', $permission );
-		// capture the permission name
+		// capture the permission token name
 		$name = DB::get_value( 'SELECT name FROM {tokens} WHERE id=?', array( $permission ) );
 		// remove all references to this permissions
 		$result = DB::query( 'DELETE FROM {group_token_permissions} WHERE permission_id=?', array( $permission ) );
@@ -97,22 +116,22 @@ class ACL {
 	 * @param string the order in which to sort the returning array
 	 * @return array an array of QueryRecord objects containing all permissions
 	**/
-	public static function all_permissions( $order= 'id' )
+	public static function all_permission_tokens( $order= 'id' )
 	{
-		$order= strtolower( $order );
+		$order = strtolower( $order );
 		if ( ( 'id' != $order ) && ( 'name' != $order ) && ( 'description' != $order ) ) {
 			$order= 'id';
 		}
-		$permissions= DB::get_results( 'SELECT id, name, description FROM {tokens} ORDER BY ' . $order );
+		$permissions = DB::get_results( 'SELECT id, name, description FROM {tokens} ORDER BY ' . $order );
 		return $permissions ? $permissions : array();
 	}
 
 	/**
-	 * Get a permission's name by its ID
+	 * Get a permission token's name by its ID
 	 * @param int a permission ID
 	 * @return string the name of the permission, or boolean FALSE
 	**/
-	public static function permission_name( $id )
+	public static function token_name( $id )
 	{
 		if ( ! is_int( $id ) ) {
 			return false;
@@ -122,11 +141,11 @@ class ACL {
 	}
 
 	/**
-	 * Get a permission's ID by its name
+	 * Get a permission token's ID by its name
 	 * @param string the name of the permission
 	 * @return int the permission's ID
 	**/
-	public static function permission_id( $name )
+	public static function token_id( $name )
 	{
 		if( is_integer($name) ) {
 			return $name;
@@ -136,11 +155,11 @@ class ACL {
 	}
 
 	/**
-	 * Fetch a permission description from the DB
+	 * Fetch a permission token's description from the DB
 	 * @param mixed a permission name or ID
 	 * @return string the description of the permission
 	**/
-	public static function permission_description( $permission )
+	public static function token_description( $permission )
 	{
 		if ( is_int( $permission) ) {
 			$query= 'id';
@@ -152,11 +171,11 @@ class ACL {
 	}
 
 	/**
-	 * Determine whether a permission exists
+	 * Determine whether a permission token exists
 	 * @param mixed a permission name or ID
 	 * @return bool whether the permission exists or not
 	**/
-	public static function permission_exists( $permission )
+	public static function token_exists( $permission )
 	{
 		if ( is_int( $permission ) ) {
 			$query= 'id';
@@ -201,12 +220,12 @@ class ACL {
 	{
 		// Use only numeric ids internally
 		$group = UserGroup::id( $group );
-		$permission = ACL::permission_id( $permission );
+		$permission = self::token_id( $permission );
 		$sql = <<<SQL
 SELECT p.name FROM {group_token_permissions} gp, {permissions} p WHERE
 gp.group_id=? AND gp.token_id=? AND gp.permission_id=p.id;
 SQL;
-		$result = DB::get_values( $sql );
+		$result = DB::get_value( $sql );
 		if ( $result == $access ) {
 			// the permission has been granted to this group
 			return true;
@@ -226,7 +245,7 @@ SQL;
 	public static function user_can( $user, $permission, $access = 'full' )
 	{
 		// Use only numeric ids internally
-		$permission= ACL::permission_id( $permission );
+		$permission= self::token_id( $permission );
 		// if we were given a user ID, use that to fetch the group membership from the DB
 		if ( is_int( $user) ) {
 			$user_id= $user;
@@ -291,6 +310,35 @@ SQL;
 		return self::ACCESS_NONEXISTANT_PERMISSION;
 		return false;
 	}
+
+	/**
+	 * Grant a permission to a group
+	 * @param integer $group_id The group ID
+	 * @param integer $token_id The permission token to grant
+	 * @param string $access The kind of access to assign the group
+	 * @return Result of the DB query
+	 **/
+	public static function grant_group( $group_id, $token_id, $access = 'full' )
+	{
+		$result = DB::query( 'INSERT INTO {group_tokens_permissions} (group_id, token_id, permission_id) VALUES (?, ?, ?);',
+			array( $group_id, $token_id, self::permission_ids( $access ) );
+		return $result;
+	}
+
+	/**
+	 * Grant a permission to a user 
+	 * @param integer $user_id The user ID
+	 * @param integer $token_id The permission token to grant
+	 * @param string $access The kind of access to assign the group
+	 * @return Result of the DB query
+	 **/
+	public static function grant_user( $user_id, $token_id, $access = 'full' )
+	{
+		$result = DB::query( 'INSERT INTO {user_tokens_permissions} (user_id, token_id, permission_id) VALUES (?, ?, ?);',
+			array( $user_id, $token_id, self::permission_ids( $access ) );
+		return $result;
+	}
+	
 
 	/**
 	 * Convert a permission name into a valid format
