@@ -26,24 +26,28 @@ class ACL {
 	private static $permission_ids = array();
 
 	/**
+	 * Static initializer to fill the $permission_ids array
+	 */
+	public static function __static()
+	{
+		$result = DB::get_results( 'SELECT id, name FROM {permissions};' );
+		foreach ( $result as $r ) {
+			self::$permission_ids[$r->name] = $r->id;
+		}
+	}
+
+	/**
 	 * Convert a permission access name (read, write, full, denied) into an ID
 	 * @param string The access name
 	 * @return mixed the ID of the permission, or boolean FALSE if it does not exist
 	 **/
 	public static function permission_id( $name )
 	{
-		if ( count( $access_ids ) == 0 ) {
-			$result = DB::query( 'SELECT id, name FROM {permissions};' );
-			foreach ( $result as $r ) {
-				$access_ids[$r->name] = $r->id;
-			}
-		}
-
-		return ( isset( $access_ids[$name] ) ? $access_ids[$name] : FALSE;
+		return ( isset( self::$permission_ids[$name] ) ? self::$permission_ids[$name] : FALSE;
 	}
 
 	/**
-	 * Create a new permission, and save it to the Permissions table
+	 * Create a new permission, and save it to the permission tokens table
 	 * @param string The name of the permission
 	 * @param string The description of the permission
 	 * @return mixed the ID of the newly created permission, or boolean FALSE
@@ -116,7 +120,7 @@ class ACL {
 	 * @param string the order in which to sort the returning array
 	 * @return array an array of QueryRecord objects containing all permissions
 	**/
-	public static function all_permission_tokens( $order= 'id' )
+	public static function all_permissions( $order= 'id' )
 	{
 		$order = strtolower( $order );
 		if ( ( 'id' != $order ) && ( 'name' != $order ) && ( 'description' != $order ) ) {
@@ -221,12 +225,11 @@ class ACL {
 		// Use only numeric ids internally
 		$group = UserGroup::id( $group );
 		$permission = self::token_id( $permission );
-		$sql = <<<SQL
-SELECT p.name FROM {group_token_permissions} gp, {permissions} p WHERE
-gp.group_id=? AND gp.token_id=? AND gp.permission_id=p.id;
-SQL;
+		$sql = 'SELECT permission_id FROM {group_token_permissions} WHERE
+			group_id=? AND token_id=?;';
+
 		$result = DB::get_value( $sql );
-		if ( $result == $access ) {
+		if ( $result !== FALSE && self::$permission_ids[$result] == $access ) {
 			// the permission has been granted to this group
 			return true;
 		}
@@ -275,7 +278,7 @@ SQL;
 		 * call.
 		 */ 
 		$sql = <<<SQL
-SELECT COALESCE(permission_id, 0) as permission_id
+SELECT permission_id
 FROM (
 (
   SELECT permission_id
@@ -299,46 +302,101 @@ LIMIT 1;
 SQL;
 		$result = DB::get_value( $sql, array( ':user_id' => $user_id, ':token_id' => $permission );
 
-		// TODO: modify above call to return the permission name rather than the ID
-		// For now, I'll just look for a result > 0
-		if ( $result !== FALSE && intval($result) > 0 ) {
+		if ( $result !== FALSE && self::permission_ids[$result] == $access ) {
 			return true;
 		}
 
-		// if the permission is neither denied nor granted, they're not
-		// allowed to do it.
-		return self::ACCESS_NONEXISTANT_PERMISSION;
+		// either the permission hasn't been granted, or it's been
+		// explicitly denied.
 		return false;
 	}
 
 	/**
 	 * Grant a permission to a group
 	 * @param integer $group_id The group ID
-	 * @param integer $token_id The permission token to grant
+	 * @param mixed $token_id The name or ID of the permission token to grant
 	 * @param string $access The kind of access to assign the group
 	 * @return Result of the DB query
 	 **/
 	public static function grant_group( $group_id, $token_id, $access = 'full' )
 	{
-		$result = DB::query( 'INSERT INTO {group_tokens_permissions} (group_id, token_id, permission_id) VALUES (?, ?, ?);',
-			array( $group_id, $token_id, self::permission_ids( $access ) );
+		// DB::update will insert if the token is not already in the group tokens table
+		$result = DB::update(
+			'{group_tokens_permissions}',
+			array( 'permission_id' => self::$permission_ids[$access] ),
+			array( 'group_id' => $group_id, 'token_id' => self::token_id( $token_id ) )
+		);
+
 		return $result;
 	}
 
 	/**
 	 * Grant a permission to a user 
 	 * @param integer $user_id The user ID
-	 * @param integer $token_id The permission token to grant
+	 * @param integer $token_id The name or ID of the permission token to grant
 	 * @param string $access The kind of access to assign the group
 	 * @return Result of the DB query
 	 **/
 	public static function grant_user( $user_id, $token_id, $access = 'full' )
 	{
-		$result = DB::query( 'INSERT INTO {user_tokens_permissions} (user_id, token_id, permission_id) VALUES (?, ?, ?);',
-			array( $user_id, $token_id, self::permission_ids( $access ) );
+		$result = DB::update(
+			'{user_tokens_permissions}',
+			array( 'permission_id' => self::$permission_ids[$access] ),
+			array( 'user_id' => $user_id, 'token_id' => self::token_id( $token_id ) )
+		);
+
 		return $result;
 	}
 	
+	/**
+	 * Deny permission to a group
+	 * @param integer $group_id The group ID
+	 * @param mixed $token_id The name or ID of the permission token
+	 * @return Result of the DB query
+	 **/
+	public static function deny_group( $group_id, $token_id )
+	{
+		self::grant_group( $group_id, $token_id, 'deny' );
+	}
+
+	/**
+	 * Deny permission to a user 
+	 * @param integer $user_id The user ID
+	 * @param mixed $token_id The name or ID of the permission token
+	 * @return Result of the DB query
+	 **/
+	public static function deny_user( $user_id, $token_id )
+	{
+		self::grant_user( $group_id, $token_id, 'deny' );
+	}	
+
+	/**
+	 * Remove a permission from the group permissions table
+	 * @param integer $group_id The group ID
+	 * @param mixed $token_id The name or ID of the permission token
+	 * @return the result of the DB query
+	 **/
+	public static function revoke_group_permission( $group_id, $token_id )
+	{
+		$result = DB::delete( '{group_tokens_permissions}',
+			array( 'group_id' => $group_id, 'token_id' => $token_id ) );
+
+		return $result;
+	}
+
+	/**
+	 * Remove a permission from the user permissions table
+	 * @param integer $user_id The user ID
+	 * @param mixed $token_id The name or ID of the permission token
+	 * @return the result of the DB query
+	 **/
+	public static function revoke_user_permission( $user_id, $token_id )
+	{
+		$result = DB::delete( '{user_tokens_permissions}',
+			array( 'user_id' => $user_id, 'token_id' => $token_id ) );
+
+		return $result;
+	}
 
 	/**
 	 * Convert a permission name into a valid format

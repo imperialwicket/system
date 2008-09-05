@@ -6,7 +6,7 @@
 class UserGroup extends QueryRecord
 {
 	// These arrays hold the current membership and permission settings for this group
-	// These arrays are NOT matched key and value pairs (the are not stored like array('foo'=>'foo') )
+	// $member_ids is not NOT matched key and value pairs ( like array('foo'=>'foo') )
 	private $member_ids = array();
 	private $permissions = array();
 
@@ -42,10 +42,7 @@ class UserGroup extends QueryRecord
 
 			if ( $results= DB::get_results( 'SELECT token_id, permission_id FROM {group_token_permissions} WHERE group_id=?', array( $this->id ) ) ) {
 				foreach ( $results as $result ) {
-					$this->permissions[] = array(
-						'token_id' => $result->token_id,
-						'permission_id' => $result->permission_id,
-					);
+					$this->permissions[$result->token_id] = $result->permission_id;
 				}
 			}
 		}
@@ -208,17 +205,17 @@ class UserGroup extends QueryRecord
 	 * Assign one or more new permissions to this group
 	 * @param mixed A permission token ID, name, or array of the same
 	**/
-	public function grant( $permissions )
+	public function grant( $permissions, $access = 'full' )
 	{
 		$permissions = Utils::single_array( $permissions );
 		// Use ids internally for all permissions
 		$permissions = array_map(array('ACL', 'token_id'), $permissions);
-		// Merge the new permissions
-		$this->permissions_granted = $this->permissions_granted + $permissions;
-		// List each permission exactly once
-		$this->permissions_granted = array_unique($this->permissions_granted);
-		// Remove granted permissions from the denied list
-		$this->permissions_denied = array_diff($this->permissions_denied, $this->permissions_granted);
+
+		// Merge and grant the new permissions
+		foreach ( $permissions as $permission ) {
+			$this->permissions[$permission] = $access;
+			ACL::grant_group( $this->id, $permission, $access );
+		}
 	}
 
 	/**
@@ -227,15 +224,7 @@ class UserGroup extends QueryRecord
 	**/
 	public function deny( $permissions )
 	{
-		$permissions = Utils::single_array( $permissions );
-		// Use ids internally for all permissions
-		$permissions = array_map(array('ACL', 'permission_id'), $permissions);
-		// Merge the new permissions
-		$this->permissions_denied = $this->permissions_denied + $permissions;
-		// List each permission exactly once
-		$this->permissions_denied = array_unique($this->permissions_denied);
-		// Remove denied permissions from the granted list
-		$this->permissions_granted = array_diff($this->permissions_granted, $this->permissions_denied);
+		$this->grant( $permissions, 'deny' );
 	}
 
 	/**
@@ -246,9 +235,10 @@ class UserGroup extends QueryRecord
 	{
 		$permissions = Utils::single_array( $permissions );
 		// Remove permissions from the granted list
-		$this->permissions_granted = array_diff($this->permissions_granted, $permissions);
-		// Remove permissions from the denied list
-		$this->permissions_denied = array_diff($this->permissions_denied, $permissions);
+		$this->permissions = array_diff_key( $this->permissions, $permissions );
+		foreach ( $permissions as $permission ) {
+			ACL::revoke_group_permission( $this->id, $permission );
+		}
 	}
 
 	/**
@@ -259,13 +249,10 @@ class UserGroup extends QueryRecord
 	 * @see ACL::group_can()
 	 * @see ACL::user_can()
 	**/
-	public function can( $permission )
+	public function can( $permission, $access = 'full' )
 	{
 		$permission= ACL::token_id( $permission );
-		if ( in_array( $permission, $this->permissions_denied ) ) {
-			return false;
-		}
-		if ( in_array( $permission, $this->permissions_granted ) ) {
+		if ( isset( $this->permissions[$permission] ) && $this->permissions[$permission] == $access ) {
 			return true;
 		}
 		return false;
