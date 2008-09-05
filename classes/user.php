@@ -396,11 +396,12 @@ class User extends QueryRecord
 	 * Determine if a user has a specific permission
 	 *
 	 * @param string $permission The name of the permission to detect
+	 * @param string $access The type of access to check for (read, write, full, etc.)
 	 * @return boolean True if this user has the requested permission, false if not
 	 */
-	public function can( $permission )
+	public function can( $permission, $access = 'full' )
 	{
-		return ACL::user_can( $this, $permission );
+		return ACL::user_can( $this, $permission, $access );
 	}
 
 	/**

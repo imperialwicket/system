@@ -581,7 +581,8 @@ ENDOFSQL;
 	 */
 	public function insert()
 	{
-		$this->newfields[ 'updated' ]= HabariDateTime::date_create();
+		$this->newfields['updated']= HabariDateTime::date_create();
+		$this->newfields['modified'] = $this->newfields['updated'];
 		$this->setslug();
 		$this->setguid();
 
@@ -605,6 +606,7 @@ ENDOFSQL;
 		$this->newfields= array();
 		$this->info->commit( DB::last_insert_id() );
 		$this->save_tags();
+		$this->create_default_permissions();
 		EventLog::log( sprintf(_t('New post %1$s (%2$s);  Type: %3$s; Status: %4$s'), $this->id, $this->slug, Post::type_name( $this->content_type ), $this->statusname), 'info', 'content', 'habari' );
 		Plugins::act( 'post_insert_after', $this );
 
@@ -619,10 +621,14 @@ ENDOFSQL;
 	/**
 	 * function update
 	 * Updates an existing post in the posts table
+	 * @param bool $minor Indicates if this is a major or minor update
 	 */
-	public function update()
+	public function update( $minor = true )
 	{
-		$this->updated= HabariDateTime::date_create();
+		$this->modified = HabariDateTime::date_create();
+		if ( ! $minor ) {
+			$this->updated = $this->modified;
+		}
 		if ( isset( $this->fields['guid'] ) ) {
 			unset( $this->newfields['guid'] );
 		}
@@ -690,6 +696,9 @@ ENDOFSQL;
 		if ( isset( $this->info ) ) {
 			$this->info->delete_all();
 		}
+		// Delete all permissions associated with this post
+		$this->delete_permissions();
+
 		$result= parent::deleteRecord( DB::table( 'posts' ), array( 'slug'=>$this->slug ) );
 		EventLog::log( sprintf(_t('Post %1$s (%2$s) deleted.'), $this->id, $this->slug), 'info', 'content', 'habari' );
 
@@ -981,5 +990,32 @@ ENDOFSQL;
 		return Post::type_name($this->content_type);
 	}
 
+	/**
+	 * Creates default permissions on a post
+	 */
+	public function create_default_permissions()
+	{
+		$this->add_permission( $this->content_type() );
+	}
+
+	/**
+	 * Add a permission to a post
+	 * @param string $permission The name of the permission to add
+	 **/
+	public function add_permission( $permission )
+	{
+		$token_id = ACL::token_id( $permission );
+		if ( $token_id !== FALSE ) {
+			DB::insert( '{post_tokens}', array( 'post_id' => $this->id, 'token_id' => $token_id ) );
+		}
+	}
+
+	/**
+	 * Deletes permissions on a post
+	 */
+	public function delete_permissions()
+	{
+		DB::delete( '{post_tokens}', array( 'post_id', => $this->id ) );
+	}
 }
 ?>
