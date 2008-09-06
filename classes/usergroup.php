@@ -234,6 +234,7 @@ class UserGroup extends QueryRecord
 	public function revoke( $permissions )
 	{
 		$permissions = Utils::single_array( $permissions );
+		$permissions = array_map(array('ACL', 'token_id'), $permissions);
 		// Remove permissions from the granted list
 		$this->permissions = array_diff_key( $this->permissions, $permissions );
 		foreach ( $permissions as $permission ) {

@@ -1901,8 +1901,7 @@ class AdminHandler extends ActionHandler
 				$this->theme->members= $group->members;
 				$this->theme->users= Users::get_all();
 				$this->theme->permissions= ACL::all_permissions( 'description' );
-				$this->theme->permissions_granted= $group->granted;
-				$this->theme->permissions_denied= $group->denied;
+				$this->theme->permissions_granted= $group->permissions;
 			}
 		}
 
@@ -1947,37 +1946,23 @@ class AdminHandler extends ActionHandler
 			}
 			else {
 				$grant= array();
-				$deny= array();
 				$revoke= array();
-				if ( isset( $this->handler_vars['grant'] ) ) {
-					$form_grant= $this->handler_vars['grant'];
-				}
-				else {
-					$form_grant= array();
-				}
-				if ( isset( $this->handler_vars['deny'] ) ) {
-					$form_deny= $this->handler_vars['deny'];
-				}
-				else {
-					$form_deny= array();
-				}
 				$group= UserGroup::get( $group_name );
+
 				foreach( ACL::all_permissions() as $permission ) {
-					if ( in_array( $permission->id, $form_grant ) ) {
-						$grant[]= (int) $permission->id;
+					// grab the type of access for each permission
+					if ( isset( $this->handler_vars['perm' + $permission->id] ) ) {
+						$grant[$permission->id] = $this->handler_vars['perm' + $permission->id];
 					}
-					elseif ( in_array( $permission->id, $form_deny ) ) {
-						$deny[]= (int) $permission->id;
-					}
+					// if it isn't set, then revoke it
 					else {
-						$revoke[]= (int) $permission->id;
+						$revoke[] = (int) $permission->id;
 					}
 				}
-				if ( ! empty( $grant ) ){
+				if ( ! empty( $grant ) ) {
+					/* the following call does not yet work as used
+					 * need to re-write UserGroup::grant() */
 					$group->grant( $grant );
-				}
-				if ( ! empty( $deny ) ) {
-					$group->deny( $deny );
 				}
 				if ( ! empty( $revoke ) ) {
 					$group->revoke( $revoke );

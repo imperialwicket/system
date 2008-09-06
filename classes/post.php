@@ -1005,7 +1005,7 @@ ENDOFSQL;
 	public function add_permission( $permission )
 	{
 		$token_id = ACL::token_id( $permission );
-		if ( $token_id !== FALSE ) {
+		if ( isset( $token_id ) ) {
 			DB::insert( '{post_tokens}', array( 'post_id' => $this->id, 'token_id' => $token_id ) );
 		}
 	}
@@ -1015,7 +1015,7 @@ ENDOFSQL;
 	 */
 	public function delete_permissions()
 	{
-		DB::delete( '{post_tokens}', array( 'post_id', => $this->id ) );
+		DB::delete( '{post_tokens}', array( 'post_id' => $this->id ) );
 	}
 }
 ?>

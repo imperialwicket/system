@@ -405,6 +405,44 @@ class User extends QueryRecord
 	}
 
 	/**
+	 * Assign one or more new permissions to this user
+	 * @param mixed A permission token ID, name, or array of the same
+	**/
+	public function grant( $permissions, $access = 'full' )
+	{
+		$permissions = Utils::single_array( $permissions );
+		// Use ids internally for all permissions
+		$permissions = array_map(array('ACL', 'token_id'), $permissions);
+
+		foreach ( $permissions as $permission ) {
+			ACL::grant_user( $this->id, $permission, $access );
+		}
+	}
+
+	/**
+	 * Deny one or more permissions to this user
+	 * @param mixed The permission ID or name to be denied, or an array of the same
+	**/
+	public function deny( $permissions )
+	{
+		$this->grant( $permissions, 'deny' );
+	}
+
+	/**
+	 * Remove one or more permissions from a user
+	 * @param mixed a permission ID, name, or array of the same
+	**/
+	public function revoke( $permissions )
+	{
+		$permissions = Utils::single_array( $permissions );
+		// get token IDs
+		$permissions = array_map(array('ACL', 'token_id'), $permissions);
+		foreach ( $permissions as $permission ) {
+			ACL::revoke_user_permission( $this->id, $permission );
+		}
+	}
+
+	/**
 	 * function groups
 	 * Returns an array of groups to which this user belongs
 	 * @param bool Whether to refresh the cache

@@ -30,9 +30,9 @@ class ACL {
 	 */
 	public static function __static()
 	{
-		$result = DB::get_results( 'SELECT id, name FROM {permissions};' );
-		foreach ( $result as $r ) {
-			self::$permission_ids[$r->name] = $r->id;
+		self::$permission_ids = DB::get_keyvalue( 'SELECT name, id FROM {permissions};' );
+		if ( self::$permission_ids === FALSE ) {
+			self::$permission_ids = array();
 		}
 	}
 
@@ -43,7 +43,16 @@ class ACL {
 	 **/
 	public static function permission_id( $name )
 	{
-		return ( isset( self::$permission_ids[$name] ) ? self::$permission_ids[$name] : FALSE;
+		return isset( self::$permission_ids[$name] ) ? self::$permission_ids[$name] : FALSE;
+	}
+	
+	/**
+	 * Return all possible access names
+	 * @return array An associative array of access names and ids
+	 */
+	public static function permission_ids()
+	{
+		return self::$$permission_ids;
 	}
 
 	/**
@@ -229,7 +238,7 @@ class ACL {
 			group_id=? AND token_id=?;';
 
 		$result = DB::get_value( $sql );
-		if ( $result !== FALSE && self::$permission_ids[$result] == $access ) {
+		if ( isset( $result ) && self::$permission_ids[$result] == $access ) {
 			// the permission has been granted to this group
 			return true;
 		}
@@ -248,7 +257,7 @@ class ACL {
 	public static function user_can( $user, $permission, $access = 'full' )
 	{
 		// Use only numeric ids internally
-		$permission= self::token_id( $permission );
+		$permission = self::token_id( $permission );
 		// if we were given a user ID, use that to fetch the group membership from the DB
 		if ( is_int( $user) ) {
 			$user_id= $user;
@@ -300,9 +309,9 @@ UNION ALL
 )
 LIMIT 1; 
 SQL;
-		$result = DB::get_value( $sql, array( ':user_id' => $user_id, ':token_id' => $permission );
+		$result = DB::get_value( $sql, array( ':user_id' => $user_id, ':token_id' => $permission ) );
 
-		if ( $result !== FALSE && self::permission_ids[$result] == $access ) {
+		if ( isset( $result ) && self::$permission_ids[$result] == $access ) {
 			return true;
 		}
 
