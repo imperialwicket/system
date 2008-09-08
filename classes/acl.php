@@ -31,7 +31,8 @@ class ACL {
 	public static function __static()
 	{
 		self::$permission_ids = DB::get_keyvalue( 'SELECT name, id FROM {permissions};' );
-		if ( self::$permission_ids === FALSE ) {
+
+		if ( ! isset(self::$permission_ids) ) {
 			self::$permission_ids = array();
 		}
 	}
@@ -65,7 +66,7 @@ class ACL {
 	{
 		$name= self::normalize_permission( $name );
 		// first, make sure this isn't a duplicate
-		if ( ACL::permission_exists( $name ) ) {
+		if ( ACL::token_exists( $name ) ) {
 			return false;
 		}
 		$allow= true;
@@ -160,7 +161,7 @@ class ACL {
 	**/
 	public static function token_id( $name )
 	{
-		if( is_integer($name) ) {
+		if( is_numeric($name) ) {
 			return $name;
 		}
 		$name= self::normalize_permission( $name );
@@ -237,8 +238,8 @@ class ACL {
 		$sql = 'SELECT permission_id FROM {group_token_permissions} WHERE
 			group_id=? AND token_id=?;';
 
-		$result = DB::get_value( $sql );
-		if ( isset( $result ) && self::$permission_ids[$result] == $access ) {
+		$result = DB::get_value( $sql, array( $group, $permission) );
+		if ( isset( $result ) && $result == self::$permission_ids[$access] ) {
 			// the permission has been granted to this group
 			return true;
 		}
@@ -288,30 +289,20 @@ class ACL {
 		 */ 
 		$sql = <<<SQL
 SELECT permission_id
-FROM (
-(
-  SELECT permission_id
   FROM {user_token_permissions}
   WHERE user_id = :user_id
   AND token_id = :token_id
-) AS up
 UNION ALL
-(
-  SELECT gp.permission_id
+SELECT gp.permission_id
   FROM {users_groups} ug
   INNER JOIN {group_token_permissions} gp
   ON ug.group_id = gp.group_id
   AND ug.user_id = :user_id
-  AND gp.token_id = :token_id
-  ORDER BY permission_id ASC
-  LIMIT 1
-)
-)
-LIMIT 1; 
+  AND gp.token_id = :token_id;
 SQL;
 		$result = DB::get_value( $sql, array( ':user_id' => $user_id, ':token_id' => $permission ) );
 
-		if ( isset( $result ) && self::$permission_ids[$result] == $access ) {
+		if ( isset( $result ) && $result == self::$permission_ids[$access] ) {
 			return true;
 		}
 
@@ -331,10 +322,13 @@ SQL;
 	{
 		// DB::update will insert if the token is not already in the group tokens table
 		$result = DB::update(
-			'{group_tokens_permissions}',
+			'{group_token_permissions}',
 			array( 'permission_id' => self::$permission_ids[$access] ),
 			array( 'group_id' => $group_id, 'token_id' => self::token_id( $token_id ) )
 		);
+
+		$ug = UserGroup::get_by_id( $group_id );
+		$ug->clear_permissions_cache();
 
 		return $result;
 	}
@@ -349,7 +343,7 @@ SQL;
 	public static function grant_user( $user_id, $token_id, $access = 'full' )
 	{
 		$result = DB::update(
-			'{user_tokens_permissions}',
+			'{user_token_permissions}',
 			array( 'permission_id' => self::$permission_ids[$access] ),
 			array( 'user_id' => $user_id, 'token_id' => self::token_id( $token_id ) )
 		);
@@ -387,8 +381,11 @@ SQL;
 	 **/
 	public static function revoke_group_permission( $group_id, $token_id )
 	{
-		$result = DB::delete( '{group_tokens_permissions}',
+		$result = DB::delete( '{group_token_permissions}',
 			array( 'group_id' => $group_id, 'token_id' => $token_id ) );
+
+		$ug = UserGroup::get_by_id( $group_id );
+		$ug->clear_permissions_cache();
 
 		return $result;
 	}
@@ -401,7 +398,7 @@ SQL;
 	 **/
 	public static function revoke_user_permission( $user_id, $token_id )
 	{
-		$result = DB::delete( '{user_tokens_permissions}',
+		$result = DB::delete( '{user_token_permissions}',
 			array( 'user_id' => $user_id, 'token_id' => $token_id ) );
 
 		return $result;

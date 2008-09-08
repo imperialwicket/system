@@ -39,12 +39,6 @@ class UserGroup extends QueryRecord
 			if ( $result= DB::get_column( 'SELECT user_id FROM {users_groups} WHERE group_id= ?', array( $this->id ) ) ) {
 				$this->member_ids= $result;
 			}
-
-			if ( $results= DB::get_results( 'SELECT token_id, permission_id FROM {group_token_permissions} WHERE group_id=?', array( $this->id ) ) ) {
-				foreach ( $results as $result ) {
-					$this->permissions[$result->token_id] = $result->permission_id;
-				}
-			}
 		}
 
 		// exclude field keys from the $this->fields array that should not be updated in the database on insert/update
@@ -211,9 +205,8 @@ class UserGroup extends QueryRecord
 		// Use ids internally for all permissions
 		$permissions = array_map(array('ACL', 'token_id'), $permissions);
 
-		// Merge and grant the new permissions
+		// grant the new permissions
 		foreach ( $permissions as $permission ) {
-			$this->permissions[$permission] = $access;
 			ACL::grant_group( $this->id, $permission, $access );
 		}
 	}
@@ -235,6 +228,9 @@ class UserGroup extends QueryRecord
 	{
 		$permissions = Utils::single_array( $permissions );
 		$permissions = array_map(array('ACL', 'token_id'), $permissions);
+		if ( ! isset( $this->permissions ) ) {
+			$this->load_permissions_cache();
+		}
 		// Remove permissions from the granted list
 		$this->permissions = array_diff_key( $this->permissions, $permissions );
 		foreach ( $permissions as $permission ) {
@@ -253,10 +249,33 @@ class UserGroup extends QueryRecord
 	public function can( $permission, $access = 'full' )
 	{
 		$permission= ACL::token_id( $permission );
+		if ( ! isset( $this->permissions ) ) {
+			$this->load_permissions_cache();
+		}
 		if ( isset( $this->permissions[$permission] ) && $this->permissions[$permission] == $access ) {
 			return true;
 		}
 		return false;
+	}
+	
+	/**
+	 * Clear permissions cache.
+	 */
+	public function clear_permissions_cache()
+	{
+		unset( $this->permissions );
+	}
+	
+	/**
+	 * Load permissions cache.
+	 */
+	public function load_permissions_cache()
+	{
+		if ( $results= DB::get_results( 'SELECT token_id, permission_id FROM {group_token_permissions} WHERE group_id=?', array( $this->id ) ) ) {
+			foreach ( $results as $result ) {
+				$this->permissions[$result->token_id] = $result->permission_id;
+			}
+		}
 	}
 
 	/**
@@ -312,7 +331,7 @@ class UserGroup extends QueryRecord
 	**/
 	public static function name( $id )
 	{
-		$check_field = is_int( $id ) ? 'id' : 'name';
+		$check_field = is_numeric( $id ) ? 'id' : 'name';
 		$name = DB::get_value( "SELECT name FROM {groups} WHERE {$check_field}=?", array( $id ) );
 		return $name;  // get_value returns false if no record is returned
 	}
@@ -324,8 +343,10 @@ class UserGroup extends QueryRecord
 	**/
 	public static function id( $name )
 	{
-		$check_field = is_int( $name ) ? 'id' : 'name';
-		$id = DB::get_value( "SELECT id FROM {groups} WHERE {$check_field}=?", array( $name ) );
+		if( is_numeric($name) ) {
+			return $name;
+		}
+		$id = DB::get_value( "SELECT id FROM {groups} WHERE name=?", array( $name ) );
 		return $id; // get_value returns false if no record is returned
 	}
 }
