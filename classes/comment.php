@@ -53,7 +53,7 @@ class Comment extends QueryRecord implements IsContent
 			'ip' => '',
 			'content' => '',
 			'status' => self::STATUS_UNAPPROVED,
-			'date' => '',
+			'date' => strtotime( HabariDateTime::date_create()->get() ),
 			'type' => self::COMMENT
 		);
 	}
@@ -234,7 +234,7 @@ class Comment extends QueryRecord implements IsContent
 			return $this->setstatus($value);
 		case 'date':
 			if ( !($value instanceOf HabariDateTime) ) {
-				$value= HabariDateTime::date_create($value);
+				$value = strtotime( HabariDateTime::date_create($value)->get() );
 			}
 			break;
 		case 'post':

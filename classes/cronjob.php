@@ -27,9 +27,9 @@ class CronJob extends QueryRecord
 			'name' => '',
 			'callback' => '',
 			'last_run' => '',
-			'next_run' => time(),
+			'next_run' => strtotime( HabariDateTime::create_date()->get() ),
 			'increment' => 86400, // one day
-			'start_time' => time(),
+			'start_time' => strtotime( HabariDateTime::create_date()->get() ),
 			'end_time' => '',
 			'result' => '',
 			'cron_class' => self::CRON_CUSTOM,
@@ -44,7 +44,7 @@ class CronJob extends QueryRecord
 	 */
 	public function __construct( $paramarray = array() )
 	{
-		$this->now = time();
+		$this->now = HabariDateTime::create_date();
 
 		// Defaults
 		$this->fields = array_merge(
@@ -75,8 +75,8 @@ class CronJob extends QueryRecord
 	 * by email to specified address.
 	 * Note: end_time can be null, ie. "The Never Ending Cron Job".
 	 *
-	 * Callback is passed a param_array of the Cron Job feilds and the exection time
-	 * as the 'now' feild. The 'result' feild contains the result of the last execution; either
+	 * Callback is passed a param_array of the Cron Job fields and the execution time
+	 * as the 'now' field. The 'result' field contains the result of the last execution; either
 	 * 'executed' or 'failed'.
 	 *
 	 * @todo delete job after # failed attempts.
