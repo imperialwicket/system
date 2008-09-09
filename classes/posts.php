@@ -309,8 +309,8 @@ class Posts extends ArrayObject
 					$where[]= 'pubdate BETWEEN ? AND ?';
 					$startDate = sprintf( '%d-%02d-%02d', $paramset['year'], $paramset['month'], $paramset['day'] );
 					$startDate = HabariDateTime::date_create( $startDate );
-					$params[]= '' + $startDate;
-					$params[]= '' + $startDate->modify( '+1 day' );
+					$params[]= $startDate->sql;
+					$params[]= $startDate->modify( '+1 day' )->sql;
 					//$params[]= date( 'Y-m-d H:i:s', mktime( 0, 0, 0, $paramset['month'], $paramset['day'], $paramset['year'] ) );
 					//$params[]= date( 'Y-m-d H:i:s', mktime( 23, 59, 59, $paramset['month'], $paramset['day'], $paramset['year'] ) );
 				}
@@ -318,8 +318,8 @@ class Posts extends ArrayObject
 					$where[]= 'pubdate BETWEEN ? AND ?';
 					$startDate = sprintf( '%d-%02d-%02d', $paramset['year'], $paramset['month'], 1 );
 					$startDate = HabariDateTime::date_create( $startDate );
-					$params[]= '' + $startDate;
-					$params[]= '' + $startDate->modify( '+1 month' );
+					$params[]= $startDate->sql;
+					$params[]= $startDate->modify( '+1 month' )->sql;
 					//$params[]= date( 'Y-m-d H:i:s', mktime( 0, 0, 0, $paramset['month'], 1, $paramset['year'] ) );
 					//$params[]= date( 'Y-m-d H:i:s', mktime( 23, 59, 59, $paramset['month'] + 1, 0, $paramset['year'] ) );
 				}
@@ -327,22 +327,20 @@ class Posts extends ArrayObject
 					$where[]= 'pubdate BETWEEN ? AND ?';
 					$startDate = sprintf( '%d-%02d-%02d', $paramset['year'], 1, 1 );
 					$startDate = HabariDateTime::date_create( $startDate );
-					$params[]= '' + $startDate;
-					$params[]= '' + $startDate->modify( '+1 year' );
+					$params[]= $startDate->sql;
+					$params[]= $startDate->modify( '+1 year' )->sql;
 					//$params[]= date( 'Y-m-d H:i:s', mktime( 0, 0, 0, 1, 1, $paramset['year'] ) );
 					//$params[]= date( 'Y-m-d H:i:s', mktime( 0, 0, -1, 1, 1, $paramset['year'] + 1 ) );
 				}
 
 				if( isset( $paramset['after'] ) ) {
-					$aftertime= strtotime( $paramset['after'] );
 					$where[]= 'pubdate > ?';
-					$params[]= date( 'Y-m-d H:i:s', $aftertime );
+					$params[]= HabariDateTime::date_create( $paramset['after'] )->sql;
 				}
 
 				if( isset( $paramset['before'] ) ) {
-					$beforetime= strtotime( $paramset['before'] );
 					$where[]= 'pubdate < ?';
-					$params[]= date( 'Y-m-d H:i:s', $beforetime );
+					$params[]= HabariDateTime::date_create( $paramset['before'] )->sql;
 				}
 
 				// Concatenate the WHERE clauses

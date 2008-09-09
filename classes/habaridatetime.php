@@ -85,7 +85,11 @@ class HabariDateTime extends DateTime
 				return clone $this;
 
 			case 'sql':
-				return $this->format('Y-m-d H:i:s');
+				return $this->format('U');
+				break;
+
+			case 'int':
+				return intval( $this->format('U') );
 				break;
 
 			default:

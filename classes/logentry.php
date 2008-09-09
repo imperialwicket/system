@@ -40,7 +40,7 @@ class LogEntry extends QueryRecord
 			'severity_id' => NULL,
 			'message' => '',
 			'data' => '',
-			'timestamp' => strtotime( HabariDateTime::date_create()->get() ),
+			'timestamp' => HabariDateTime::date_create(),
 			'ip' => 0,
 		);
 	}

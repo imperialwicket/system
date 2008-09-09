@@ -27,9 +27,9 @@ class CronJob extends QueryRecord
 			'name' => '',
 			'callback' => '',
 			'last_run' => '',
-			'next_run' => strtotime( HabariDateTime::create_date()->get() ),
+			'next_run' => HabariDateTime::date_create(),
 			'increment' => 86400, // one day
-			'start_time' => strtotime( HabariDateTime::create_date()->get() ),
+			'start_time' => HabariDateTime::date_create(),
 			'end_time' => '',
 			'result' => '',
 			'cron_class' => self::CRON_CUSTOM,
@@ -44,7 +44,7 @@ class CronJob extends QueryRecord
 	 */
 	public function __construct( $paramarray = array() )
 	{
-		$this->now = HabariDateTime::create_date();
+		$this->now = HabariDateTime::date_create();
 
 		// Defaults
 		$this->fields = array_merge(
@@ -118,8 +118,20 @@ class CronJob extends QueryRecord
 	 */
 	public function __set( $name, $value )
 	{
-		if ( $name == 'callback' && ( is_array($value) || is_object($value) ) ) {
-			$value = serialize( $value );
+		switch( $name ) {
+		case 'callback':
+			if ( is_array($value) || is_object($value) ) {
+				$value = serialize( $value );
+			}
+			break;
+		case 'next_run':
+		case 'last_run':
+		case 'start_time':
+		case 'end_time':
+			if ( !($value instanceOf HabariDateTime) ) {
+				$value = HabariDateTime::date_create($value);
+			}
+			break;
 		}
 		return parent::__set( $name, $value );
 	}

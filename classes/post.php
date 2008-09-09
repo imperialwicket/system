@@ -264,9 +264,9 @@ class Post extends QueryRecord implements IsContent
 			'cached_content' => '',
 			'user_id' => 0,
 			'status' => Post::status( 'draft' ),
-			'pubdate' => strtotime( HabariDateTime::date_create()->get() ),
-			'updated' => strtotime( HabariDateTime::date_create()->get() ),
-			'modified' => strtotime( HabariDateTime::date_create()->get() ),
+			'pubdate' => HabariDateTime::date_create(),
+			'updated' => HabariDateTime::date_create(),
+			'modified' => HabariDateTime::date_create(),
 			'content_type' => Post::type( 'entry' )
 		);
 	}
@@ -581,7 +581,7 @@ ENDOFSQL;
 	 */
 	public function insert()
 	{
-		$this->newfields['updated']= strtotime( HabariDateTime::date_create()->get() );
+		$this->newfields['updated']= HabariDateTime::date_create();
 		$this->newfields['modified'] = $this->newfields['updated'];
 		$this->setslug();
 		$this->setguid();
@@ -625,7 +625,7 @@ ENDOFSQL;
 	 */
 	public function update( $minor = true )
 	{
-		$this->modified = strtotime( HabariDateTime::date_create()->get() );
+		$this->modified = HabariDateTime::date_create();
 		if ( ! $minor ) {
 			$this->updated = $this->modified;
 		}
@@ -730,7 +730,7 @@ ENDOFSQL;
 		Plugins::act( 'post_publish_before', $this );
 
 		if ( $this->status != Post::status( 'scheduled' ) )  {
-			$this->pubdate= strtotime( HabariDateTime::create_date()->get() );
+			$this->pubdate= HabariDateTime::create_date();
 		}
 
 		if ( $this->status == Post::status( 'scheduled' ) ) {
@@ -819,7 +819,7 @@ ENDOFSQL;
 		case 'updated':
 		case 'modified':
 			if ( !($value instanceOf HabariDateTime) ) {
-				$value= strtotime( HabariDateTime::date_create($value)->get() );
+				$value = HabariDateTime::date_create($value);
 			}
 			break;
 		case 'tags':
