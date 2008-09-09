@@ -8,7 +8,7 @@ class UserGroup extends QueryRecord
 	// These arrays hold the current membership and permission settings for this group
 	// $member_ids is not NOT matched key and value pairs ( like array('foo'=>'foo') )
 	private $member_ids = array();
-	private $permissions = array();
+	private $permissions;
 
 	/**
 	 * get default fields for this record
@@ -116,11 +116,11 @@ class UserGroup extends QueryRecord
 		}
 
 		// Remove all permissions from this group in preparation for adding the current list
-		DB::query( 'DELETE FROM {group_token_permissions} WHERE group_id=?', array( $this->id ) );
+		/*DB::query( 'DELETE FROM {group_token_permissions} WHERE group_id=?', array( $this->id ) );
 		// Add the current list of permissions into the group
 		foreach( $this->permissions as $permission ) {
 			DB::query('INSERT INTO {group_token_permissions} (group_id, token_id, permission_id) VALUES (?, ?, ?)', array( $this->id, $permission->token_id, $permission->permission_id ) );
-		}
+		}*/
 	}
 
 	/**
@@ -228,7 +228,7 @@ class UserGroup extends QueryRecord
 	{
 		$permissions = Utils::single_array( $permissions );
 		$permissions = array_map(array('ACL', 'token_id'), $permissions);
-		if ( ! isset( $this->permissions ) ) {
+		if ( is_null( $this->permissions ) ) {
 			$this->load_permissions_cache();
 		}
 		// Remove permissions from the granted list
@@ -249,10 +249,10 @@ class UserGroup extends QueryRecord
 	public function can( $permission, $access = 'full' )
 	{
 		$permission= ACL::token_id( $permission );
-		if ( ! isset( $this->permissions ) ) {
+		if ( is_null( $this->permissions ) ) {
 			$this->load_permissions_cache();
 		}
-		if ( isset( $this->permissions[$permission] ) && $this->permissions[$permission] == $access ) {
+		if ( isset( $this->permissions[$permission] ) && $this->permissions[$permission] == ACL::permission_id( $access ) ) {
 			return true;
 		}
 		return false;
@@ -263,7 +263,8 @@ class UserGroup extends QueryRecord
 	 */
 	public function clear_permissions_cache()
 	{
-		unset( $this->permissions );
+		//unset( $this->permissions );
+		$this->permissions = NULL;
 	}
 	
 	/**
@@ -286,7 +287,7 @@ class UserGroup extends QueryRecord
 	*/
 	public static function get( $group )
 	{
-		if ( is_int( $group ) ) {
+		if ( is_numeric( $group ) ) {
 			return self::get_by_id( $group );
 		}
 		else {

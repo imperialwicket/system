@@ -191,14 +191,14 @@ class ACL {
 	**/
 	public static function token_exists( $permission )
 	{
-		if ( is_int( $permission ) ) {
+		if ( is_numeric( $permission ) ) {
 			$query= 'id';
 		}
 		else {
 			$query= 'name';
 			$permission= self::normalize_permission( $permission );
 		}
-		return ( DB::get_value( "SELECT COUNT(id) FROM {tokens} WHERE $query=?", array( $permission ) ) > 0 );
+		return ( (int) DB::get_value( "SELECT COUNT(id) FROM {tokens} WHERE $query=?", array( $permission ) ) > 0 );
 	}
 
 	/**
