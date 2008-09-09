@@ -40,9 +40,25 @@ CREATE TEMPORARY TABLE log_tmp (
   ip INTEGER UNSIGNED NOT NULL
 );
 
+CREATE TEMPORARY TABLE crontab_tmp (
+  cron_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  callback VARCHAR(255) NOT NULL,
+  last_run INTEGER,
+  next_run INTEGER NOT NULL,
+  increment INTEGER NOT NULL,
+  start_time INTEGER NOT NULL,
+  end_time INTEGER,
+  result VARCHAR(255) NOT NULL,
+  notify VARCHAR(255) NOT NULL,
+  cron_class TINYINTEGER NOT NULL DEFAULT 0,
+  description TEXT NULL
+);
+
 INSERT INTO posts_tmp SELECT id, slug, content_type, title, guid, content, cached_content, user_id, status, strftime('%s', pubdate), strftime('%s', updated) FROM {$prefix}posts;
 INSERT INTO comments_tmp SELECT id, post_id, name, email, url, ip, content, status, strftime('%s', date), type FROM {$prefix}comments;
 INSERT INTO log_tmp SELECT id, user_id, type_id, severity_id, message, data, strftime('%s', timestamp), ip FROM {$prefix}log;
+INSERT INTO crontab_tmp SELECT cron_id, name, callback, strftime('%s', last_run), strftime('%s', next_run), increment, strftime('%s', start_time), strftime('%s', end_time), result, notify, cron_class, description FROM {$prefix}crontab;
 
 DROP TABLE {$prefix}posts;
 DROP TABLE {$prefix}comments;
@@ -88,6 +104,22 @@ CREATE TABLE {$prefix}log (
   ip INTEGER UNSIGNED NOT NULL
 );
 
+CREATE TABLE {$prefix}crontab (
+  cron_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  callback VARCHAR(255) NOT NULL,
+  last_run INTEGER,
+  next_run INTEGER NOT NULL,
+  increment INTEGER NOT NULL,
+  start_time INTEGER NOT NULL,
+  end_time INTEGER,
+  result VARCHAR(255) NOT NULL,
+  notify VARCHAR(255) NOT NULL,
+  cron_class TINYINTEGER NOT NULL DEFAULT 0,
+  description TEXT NULL
+);
+
 INSERT INTO {$prefix}posts SELECT * FROM posts_tmp;
 INSERT INTO {$prefix}comments SELECT * FROM comments_tmp;
 INSERT INTO {$prefix}log SELECT * FROM log_tmp;
+INSERT INTO {$prefix}crontab SELECT * FROM crontab_tmp;

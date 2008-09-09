@@ -44,9 +44,27 @@ CREATE TABLE {$prefix}log_tmp (
 );
 INSERT INTO {$prefix}log_tmp SELECT `id`, `user_id`, `type_id`, `severity_id`, `message`, `data`, UNIX_TIMESTAMP(`timestamp`), `ip` FROM {$prefix}log;
 
+CREATE TABLE {$prefix}crontab_tmp (
+  cron_id INT unsigned NOT NULL auto_increment,
+  name VARCHAR(255) NOT NULL,
+  callback VARCHAR(255) NOT NULL,
+  last_run INT UNSIGNED,
+  next_run INT UNSIGNED NOT NULL,
+  increment INT UNSIGNED NOT NULL,
+  start_time INT UNSIGNED NOT NULL,
+  end_time INT UNSIGNED,
+  result VARCHAR(255) NOT NULL,
+  notify VARCHAR(255) NOT NULL,
+  cron_class TINYINT unsigned NOT NULL DEFAULT 0,
+  description TEXT NULL,
+  PRIMARY KEY (cron_id)
+);
+INSERT INTO {$prefix}crontab_tmp SELECT `cron_id`, `name`, `callback`, UNIX_TIMESTAMP(`last_run`), UNIX_TIMESTAMP(`next_run`), `increment`, UNIX_TIMESTAMP(`start_time`), UNIX_TIMESTAMP(`end_time`), `result`, `notify`, `cron_class`, `description` FROM {$prefix}crontab;
+
 DROP TABLE {$prefix}posts;
 DROP TABLE {$prefix}comments;
 DROP TABLE {$prefix}log;
+DROP TABLE {$prefix}crontab;
 
 CREATE TABLE {$prefix}posts (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -91,10 +109,28 @@ CREATE TABLE {$prefix}log (
   PRIMARY KEY (id)
 );
 
+CREATE TABLE {$prefix}crontab (
+  cron_id INT unsigned NOT NULL auto_increment,
+  name VARCHAR(255) NOT NULL,
+  callback VARCHAR(255) NOT NULL,
+  last_run INT UNSIGNED,
+  next_run INT UNSIGNED NOT NULL,
+  increment INT UNSIGNED NOT NULL,
+  start_time INT UNSIGNED NOT NULL,
+  end_time INT UNSIGNED,
+  result VARCHAR(255) NOT NULL,
+  notify VARCHAR(255) NOT NULL,
+  cron_class TINYINT unsigned NOT NULL DEFAULT 0,
+  description TEXT NULL,
+  PRIMARY KEY (cron_id)
+);
+
 INSERT INTO {$prefix}posts SELECT * FROM posts_tmp;
 INSERT INTO {$prefix}comments SELECT * FROM comments_tmp;
 INSERT INTO {$prefix}log SELECT * FROM log_tmp;
+INSERT INTO {$prefix}crontab SELECT * FROM crontab_tmp;
 
 DROP TABLE {$prefix}posts_tmp;
 DROP TABLE {$prefix}comments_tmp;
 DROP TABLE {$prefix}log_tmp;
+DROP TABLE {$prefix}crontab;
