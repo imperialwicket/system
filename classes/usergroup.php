@@ -77,7 +77,7 @@ class UserGroup extends QueryRecord
 		$result= parent::insertRecord( DB::table('groups') );
 		$this->fields['id']= DB::last_insert_id();
 
-		$this->set_permissions();
+		$this->set_member_list();
 
 		EventLog::log( sprintf(_t('New group created: %s'), $this->name), 'info', 'default', 'habari');
 		Plugins::act('usergroup_insert_after', $this);
@@ -97,16 +97,16 @@ class UserGroup extends QueryRecord
 		}
 		Plugins::act('usergroup_update_before', $this);
 
-		$this->set_permissions();
+		$this->set_member_list();
 
 		EventLog::log(sprintf(_t('User Group updated: %s'), $this->name), 'info', 'default', 'habari');
 		Plugins::act('usergroup_update_after', $this);
 	}
 
 	/**
-	 * Set the permissions for this group
+	 * Set the member list for this group
 	 */
-	protected function set_permissions()
+	protected function set_member_list()
 	{
 		// Remove all users from this group in preparation for adding the current list
 		DB::query('DELETE FROM {users_groups} WHERE group_id=?', array( $this->id ) );
@@ -115,12 +115,6 @@ class UserGroup extends QueryRecord
 			DB::query('INSERT INTO {users_groups} (user_id, group_id) VALUES (?, ?)', array( $user_id, $this->id) );
 		}
 
-		// Remove all permissions from this group in preparation for adding the current list
-		/*DB::query( 'DELETE FROM {group_token_permissions} WHERE group_id=?', array( $this->id ) );
-		// Add the current list of permissions into the group
-		foreach( $this->permissions as $permission ) {
-			DB::query('INSERT INTO {group_token_permissions} (group_id, token_id, permission_id) VALUES (?, ?, ?)', array( $this->id, $permission->token_id, $permission->permission_id ) );
-		}*/
 	}
 
 	/**
@@ -228,11 +222,7 @@ class UserGroup extends QueryRecord
 	{
 		$permissions = Utils::single_array( $permissions );
 		$permissions = array_map(array('ACL', 'token_id'), $permissions);
-		if ( is_null( $this->permissions ) ) {
-			$this->load_permissions_cache();
-		}
-		// Remove permissions from the granted list
-		$this->permissions = array_diff_key( $this->permissions, $permissions );
+
 		foreach ( $permissions as $permission ) {
 			ACL::revoke_group_permission( $this->id, $permission );
 		}
@@ -252,7 +242,7 @@ class UserGroup extends QueryRecord
 		if ( is_null( $this->permissions ) ) {
 			$this->load_permissions_cache();
 		}
-		if ( isset( $this->permissions[$permission] ) && $this->permissions[$permission] == ACL::permission_id( $access ) ) {
+		if ( isset( $this->permissions[$permission] ) && ACL::access_check( $this->permissions[$permission], $access ) ) {
 			return true;
 		}
 		return false;
@@ -349,6 +339,24 @@ class UserGroup extends QueryRecord
 		}
 		$id = DB::get_value( "SELECT id FROM {groups} WHERE name=?", array( $name ) );
 		return $id; // get_value returns false if no record is returned
+	}
+
+	/**
+	 * Determine whether the specified user is a member of the group
+	 * @param mixed A user ID or name
+	 * @return bool True if the user is in the group, otherwise false
+	**/
+	public function member( $user_id )
+	{
+		if ( ! is_numeric( $user_id ) ) {
+			$user = User::get( $user_id );
+			$user_id = $user->id;
+		}
+
+		if ( in_array( $user_id, $this->member_ids ) ) {
+			return true;
+		}
+		return false;
 	}
 }
 ?>

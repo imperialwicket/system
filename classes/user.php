@@ -154,6 +154,10 @@ class User extends QueryRecord
 		if(isset($this->info)) {
 			$this->info->delete_all();
 		}
+		// remove all this user's permissions
+		DB::query( 'DELETE FROM {user_token_permissions} WHERE user_id=?', array( $this->id ) );
+		// remove user from any groups
+		DB::query( 'DELETE FROM {users_groups} WHERE user_id=?', array( $this->id ) );
 		EventLog::log( sprintf(_t('User deleted: %s'), $this->username), 'info', 'default', 'habari' );
 		$result = parent::deleteRecord( DB::table('users'), array( 'id' => $this->id ) );
 		Plugins::act('user_delete_after', $this);
@@ -474,7 +478,10 @@ class User extends QueryRecord
 	**/
 	public function add_to_group( $group )
 	{
-		UserGroup::add( $group, $this->id );
+		$group = UserGroup::get( $group );
+		if ( $group instanceOf UserGroup ) {
+			$group->add( $this->id );
+		}
 	}
 
 	/**

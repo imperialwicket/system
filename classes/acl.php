@@ -23,18 +23,20 @@ class ACL {
 	 **/
 	const ACCESS_NONEXISTANT_PERMISSION = true;
 
-	private static $permission_ids = array();
+	private static $access_ids = array();
+	private static $access_names = array();
 
 	/**
-	 * Static initializer to fill the $permission_ids array
+	 * Static initializer to fill the $access_ids array
 	 */
 	public static function __static()
 	{
-		self::$permission_ids = DB::get_keyvalue( 'SELECT name, id FROM {permissions};' );
+		self::$access_ids = DB::get_keyvalue( 'SELECT name, id FROM {permissions};' );
 
-		if ( ! isset(self::$permission_ids) ) {
-			self::$permission_ids = array();
+		if ( ! isset(self::$access_ids) ) {
+			self::$access_ids = array();
 		}
+		self::$access_names = array_flip( self::$access_ids );
 	}
 
 	/**
@@ -42,18 +44,59 @@ class ACL {
 	 * @param string The access name
 	 * @return mixed the ID of the permission, or boolean FALSE if it does not exist
 	 **/
-	public static function permission_id( $name )
+	public static function access_id( $name )
 	{
-		return isset( self::$permission_ids[$name] ) ? self::$permission_ids[$name] : FALSE;
+		// if $name is numeric, assume it is already an access ID
+		if ( is_numeric( $name ) ) {
+			return $name;
+		}
+		return isset( self::$access_ids[$name] ) ? self::$access_ids[$name] : FALSE;
 	}
-	
+
 	/**
-	 * Return all possible access names
-	 * @return array An associative array of access names and ids
-	 */
-	public static function permission_ids()
+	 * Convert a permission access ID into a name
+	 * @param ID The access ID
+	 * @return mixed the name of the permission, or boolean FALSE if it does not exist
+	 **/
+	public static function access_name( $id )
 	{
-		return self::$$permission_ids;
+		// if $id is not numeric, assume it is already an access name
+		if ( ! is_numeric( $id ) ) {
+			return $id;
+		}
+		return isset( self::$access_names[$id] ) ? self::$access_names[$id] : FALSE;
+	}
+
+	/**
+	 * Check access. Implements hierarchy of access terms.
+	 * @param mixed $access_given The ID or name of the access given
+	 * @param mixed $access_check The ID or name of the access to check against
+	 * @return bool Returns true if the given access meets exceeds the access to check against
+	 */
+	public static function access_check( $access_given, $access_check )
+	{
+		$access_given = self::access_name( $access_given );
+		$access_check = self::access_name( $access_check );
+
+		if ( $access_given == 'deny' ) {
+			return false;
+		}
+		if ( $access_given == 'full' ) {
+			return true;
+		}
+		if ( $access_given == 'read' || $access_given == 'write' ) {
+			if ( $access_check == 'full' ) {
+				return false;
+			}
+			if ( $access_given == $access_check ) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		// unknown access
+		return false;
 	}
 
 	/**
@@ -202,28 +245,6 @@ class ACL {
 	}
 
 	/**
-	 * Determine whether the specified user is a member of the specified group
-	 * @param mixed A user  ID or name
-	 * @param mixed A group ID or name
-	 * @return bool True if the user is in the group, otherwise false
-	**/
-	public static function user_in_group( $user_id, $group_id )
-	{
-		if ( ! is_int( $user_id ) ) {
-			$user= User::get( $user_id );
-			$user_id= $user->id;
-		}
-		if ( ! is_int( $group_id ) ) {
-			$group_id= UserGroup::id( $group_id );
-		}
-		$group= DB::get_value( 'SELECT id FROM {users_groups} WHERE user_id=? AND group_id=?', array( $user_id, $group_id ) );
-		if ( $group ) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
 	 * Determine whether a group can perform a specific action
 	 * @param mixed $group A group ID or name
 	 * @param mixed $permission An action ID or name
@@ -239,7 +260,7 @@ class ACL {
 			group_id=? AND token_id=?;';
 
 		$result = DB::get_value( $sql, array( $group, $permission) );
-		if ( isset( $result ) && $result == self::$permission_ids[$access] ) {
+		if ( isset( $result ) && self::access_check( $result, $access ) ) {
 			// the permission has been granted to this group
 			return true;
 		}
@@ -260,15 +281,15 @@ class ACL {
 		// Use only numeric ids internally
 		$permission = self::token_id( $permission );
 		// if we were given a user ID, use that to fetch the group membership from the DB
-		if ( is_int( $user) ) {
-			$user_id= $user;
+		if ( is_numeric( $user ) ) {
+			$user_id = $user;
 		} else {
 			// otherwise, make sure we have a User object, and get
 			// the groups from that
 			if ( ! $user instanceof User ) {
-				$user= User::get( $user );
+				$user = User::get( $user );
 			}
-			$user_id= $user->id;
+			$user_id = $user->id;
 		}
 
 		/**
@@ -302,7 +323,7 @@ SELECT gp.permission_id
 SQL;
 		$result = DB::get_value( $sql, array( ':user_id' => $user_id, ':token_id' => $permission ) );
 
-		if ( isset( $result ) && $result == self::$permission_ids[$access] ) {
+		if ( isset( $result ) && self::access_check( $result, $access ) ) {
 			return true;
 		}
 
@@ -323,7 +344,7 @@ SQL;
 		// DB::update will insert if the token is not already in the group tokens table
 		$result = DB::update(
 			'{group_token_permissions}',
-			array( 'permission_id' => self::$permission_ids[$access] ),
+			array( 'permission_id' => self::$access_ids[$access] ),
 			array( 'group_id' => $group_id, 'token_id' => self::token_id( $token_id ) )
 		);
 
@@ -344,7 +365,7 @@ SQL;
 	{
 		$result = DB::update(
 			'{user_token_permissions}',
-			array( 'permission_id' => self::$permission_ids[$access] ),
+			array( 'permission_id' => self::$access_ids[$access] ),
 			array( 'user_id' => $user_id, 'token_id' => self::token_id( $token_id ) )
 		);
 
