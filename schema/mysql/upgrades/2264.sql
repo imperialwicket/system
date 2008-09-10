@@ -10,10 +10,11 @@ CREATE TABLE {$prefix}posts_tmp (
   status SMALLINT UNSIGNED NOT NULL,
   pubdate INT UNSIGNED NULL,
   updated INT UNSIGNED NULL,
+  modified INT UNSIGNED NULL,
   PRIMARY KEY (id),
   UNIQUE KEY slug (slug(80))
 );
-INSERT INTO {$prefix}posts_tmp SELECT `id`, `slug`, `content_type`, `title`, `guid`, `content`, `cached_content`, `user_id`, `status`, UNIX_TIMESTAMP(`pubdate`) as `pubdate1`, UNIX_TIMESTAMP(`updated`) as `updated1` FROM {$prefix}posts;
+INSERT INTO {$prefix}posts_tmp SELECT `id`, `slug`, `content_type`, `title`, `guid`, `content`, `cached_content`, `user_id`, `status`, UNIX_TIMESTAMP(`pubdate`) as `pubdate`, UNIX_TIMESTAMP(`updated`) as `updated`, UNIX_TIMESTAMP(`updated`) as `modified` FROM {$prefix}posts;
 
 CREATE TABLE  {$prefix}comments_tmp (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -29,7 +30,7 @@ CREATE TABLE  {$prefix}comments_tmp (
   PRIMARY KEY (id),
   KEY post_id (post_id)
 );
-INSERT INTO {$prefix}comments_tmp SELECT `id`, `post_id`, `name`, `email`, `url`, `ip`, `content`, `status`, UNIX_TIMESTAMP(`date`), `type` FROM {$prefix}comments;
+INSERT INTO {$prefix}comments_tmp SELECT `id`, `post_id`, `name`, `email`, `url`, `ip`, `content`, `status`, UNIX_TIMESTAMP(`date`) as `date`, `type` FROM {$prefix}comments;
 
 CREATE TABLE {$prefix}log_tmp (
   id INT NOT NULL AUTO_INCREMENT,
@@ -42,7 +43,7 @@ CREATE TABLE {$prefix}log_tmp (
   ip INT UNSIGNED NOT NULL, 
   PRIMARY KEY (id)
 );
-INSERT INTO {$prefix}log_tmp SELECT `id`, `user_id`, `type_id`, `severity_id`, `message`, `data`, UNIX_TIMESTAMP(`timestamp`), `ip` FROM {$prefix}log;
+INSERT INTO {$prefix}log_tmp SELECT `id`, `user_id`, `type_id`, `severity_id`, `message`, `data`, UNIX_TIMESTAMP(`timestamp`) as `timestamp`, `ip` FROM {$prefix}log;
 
 CREATE TABLE {$prefix}crontab_tmp (
   cron_id INT unsigned NOT NULL auto_increment,
@@ -59,7 +60,7 @@ CREATE TABLE {$prefix}crontab_tmp (
   description TEXT NULL,
   PRIMARY KEY (cron_id)
 );
-INSERT INTO {$prefix}crontab_tmp SELECT `cron_id`, `name`, `callback`, UNIX_TIMESTAMP(`last_run`), UNIX_TIMESTAMP(`next_run`), `increment`, UNIX_TIMESTAMP(`start_time`), UNIX_TIMESTAMP(`end_time`), `result`, `notify`, `cron_class`, `description` FROM {$prefix}crontab;
+INSERT INTO {$prefix}crontab_tmp SELECT `cron_id`, `name`, `callback`, UNIX_TIMESTAMP(`last_run`) as `last_run`, UNIX_TIMESTAMP(`next_run`) as `next_run`, `increment`, UNIX_TIMESTAMP(`start_time`) as `start_time`, UNIX_TIMESTAMP(`end_time`) as `end_time`, `result`, `notify`, `cron_class`, `description` FROM {$prefix}crontab;
 
 DROP TABLE {$prefix}posts;
 DROP TABLE {$prefix}comments;
@@ -78,6 +79,7 @@ CREATE TABLE {$prefix}posts (
   status SMALLINT UNSIGNED NOT NULL,
   pubdate INT UNSIGNED NOT NULL,
   updated INT UNSIGNED NOT NULL,
+  modified INT UNSIGNED NOT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY slug (slug(80))
 );
@@ -125,12 +127,12 @@ CREATE TABLE {$prefix}crontab (
   PRIMARY KEY (cron_id)
 );
 
-INSERT INTO {$prefix}posts SELECT * FROM posts_tmp;
-INSERT INTO {$prefix}comments SELECT * FROM comments_tmp;
-INSERT INTO {$prefix}log SELECT * FROM log_tmp;
-INSERT INTO {$prefix}crontab SELECT * FROM crontab_tmp;
+INSERT INTO {$prefix}posts SELECT * FROM {$prefix}posts_tmp;
+INSERT INTO {$prefix}comments SELECT * FROM {$prefix}comments_tmp;
+INSERT INTO {$prefix}log SELECT * FROM {$prefix}log_tmp;
+INSERT INTO {$prefix}crontab SELECT * FROM {$prefix}crontab_tmp;
 
 DROP TABLE {$prefix}posts_tmp;
 DROP TABLE {$prefix}comments_tmp;
 DROP TABLE {$prefix}log_tmp;
-DROP TABLE {$prefix}crontab;
+DROP TABLE {$prefix}crontab_tmp;

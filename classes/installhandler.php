@@ -1118,6 +1118,9 @@ class InstallHandler extends ActionHandler {
 		// do some pre-dbdelta ad-hoc hacky hack code
 		$this->upgrade_db_pre( $version );
 
+		// run schema-specific upgrade scripts
+		DB::upgrade( $version );
+
 		// Get the queries for this database and apply the changes to the structure
 		$queries= $this->get_create_table_queries($schema, $db_connection['prefix'], $db_name);
 		DB::dbdelta($queries);
@@ -1125,9 +1128,6 @@ class InstallHandler extends ActionHandler {
 		// Apply data changes to the database based on version, call the db-specific upgrades, too.
 		$this->upgrade_db_post( $version );
 		
-		// run schema-specific upgrade scripts
-		DB::upgrade( $version );
-
 		Version::save_dbversion();
 	}
 	

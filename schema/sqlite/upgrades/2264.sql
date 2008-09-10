@@ -11,7 +11,8 @@ CREATE TEMPORARY TABLE posts_tmp (
   user_id SMALLINT UNSIGNED NOT NULL,
   status SMALLINT UNSIGNED NOT NULL,
   pubdate INT UNSIGNED NOT NULL,
-  updated INT UNSIGNED NOT NULL
+  updated INT UNSIGNED NOT NULL,
+  modified INT UNSIGNED NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS slug ON posts_tmp(slug);
 
@@ -55,14 +56,15 @@ CREATE TEMPORARY TABLE crontab_tmp (
   description TEXT NULL
 );
 
-INSERT INTO posts_tmp SELECT id, slug, content_type, title, guid, content, cached_content, user_id, status, strftime('%s', pubdate), strftime('%s', updated) FROM {$prefix}posts;
-INSERT INTO comments_tmp SELECT id, post_id, name, email, url, ip, content, status, strftime('%s', date), type FROM {$prefix}comments;
-INSERT INTO log_tmp SELECT id, user_id, type_id, severity_id, message, data, strftime('%s', timestamp), ip FROM {$prefix}log;
-INSERT INTO crontab_tmp SELECT cron_id, name, callback, strftime('%s', last_run), strftime('%s', next_run), increment, strftime('%s', start_time), strftime('%s', end_time), result, notify, cron_class, description FROM {$prefix}crontab;
+INSERT INTO posts_tmp SELECT id, slug, content_type, title, guid, content, cached_content, user_id, status, strftime('%s', pubdate) as pubdate, strftime('%s', updated) as updated, strftime('%s', updated) as modified FROM {$prefix}posts;
+INSERT INTO comments_tmp SELECT id, post_id, name, email, url, ip, content, status, strftime('%s', date) as date, type FROM {$prefix}comments;
+INSERT INTO log_tmp SELECT id, user_id, type_id, severity_id, message, data, strftime('%s', timestamp) as timestamp, ip FROM {$prefix}log;
+INSERT INTO crontab_tmp SELECT cron_id, name, callback, strftime('%s', last_run) as last_run, strftime('%s', next_run) as next_run, increment, strftime('%s', start_time) as start_time, strftime('%s', end_time) as end_time, result, notify, cron_class, description FROM {$prefix}crontab;
 
 DROP TABLE {$prefix}posts;
 DROP TABLE {$prefix}comments;
 DROP TABLE {$prefix}log;
+DROP TABLE {$prefix}crontab;
 
 CREATE TABLE {$prefix}posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -75,7 +77,8 @@ CREATE TABLE {$prefix}posts (
   user_id SMALLINT UNSIGNED NOT NULL,
   status SMALLINT UNSIGNED NOT NULL,
   pubdate INT UNSIGNED NOT NULL,
-  updated INT UNSIGNED NOT NULL
+  updated INT UNSIGNED NOT NULL,
+  modified INT UNSIGNED NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS slug ON {$prefix}posts(slug);
 
