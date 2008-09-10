@@ -126,3 +126,41 @@ INSERT INTO {$prefix}posts SELECT * FROM posts_tmp;
 INSERT INTO {$prefix}comments SELECT * FROM comments_tmp;
 INSERT INTO {$prefix}log SELECT * FROM log_tmp;
 INSERT INTO {$prefix}crontab SELECT * FROM crontab_tmp;
+
+CREATE TEMPORARY TABLE rewrite_rules_tmp (
+  rule_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  parse_regex VARCHAR(255) NOT NULL,
+  build_str VARCHAR(255) NOT NULL,
+  handler VARCHAR(255) NOT NULL,
+  action VARCHAR(255) NOT NULL,
+  priority SMALLINTEGER NOT NULL,
+  is_active SMALLINTEGER NOT NULL DEFAULT 0,
+  rule_class SMALLINTEGER NOT NULL DEFAULT 0,
+  description TEXT NULL,
+  parameters TEXT NULL
+);
+
+INSERT INTO rewrite_rules_tmp (rule_id, name, parse_regex, build_str, handler, action, priority, is_active, rule_class, description)
+  SELECT * FROM {$prefix}rewrite_rules;
+
+DROP TABLE {$prefix}rewrite_rules;
+
+CREATE TABLE {$prefix}rewrite_rules (
+  rule_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  parse_regex VARCHAR(255) NOT NULL,
+  build_str VARCHAR(255) NOT NULL,
+  handler VARCHAR(255) NOT NULL,
+  action VARCHAR(255) NOT NULL,
+  priority SMALLINTEGER NOT NULL,
+  is_active SMALLINTEGER NOT NULL DEFAULT 0,
+  rule_class SMALLINTEGER NOT NULL DEFAULT 0,
+  description TEXT NULL,
+  parameters TEXT NULL
+);
+
+INSERT INTO {$prefix}rewrite_rules SELECT * FROM rewrite_rules_tmp;
+
+DROP TABLE {$prefix}permissions;
+DROP TABLE {$prefix}groups_permissions;

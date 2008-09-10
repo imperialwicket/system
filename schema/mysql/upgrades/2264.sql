@@ -136,3 +136,6 @@ DROP TABLE {$prefix}posts_tmp;
 DROP TABLE {$prefix}comments_tmp;
 DROP TABLE {$prefix}log_tmp;
 DROP TABLE {$prefix}crontab_tmp;
+
+DROP TABLE {$prefix}permissions;
+DROP TABLE {$prefix}groups_permissions;
