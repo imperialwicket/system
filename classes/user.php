@@ -269,7 +269,7 @@ class User extends QueryRecord
 	 */
 	public static function get( $who )
 	{
-		if ( is_int( $who ) ) {
+		if ( is_numeric( $who ) ) {
 			// Got a User ID
 			$user= self::get_by_id( $who );
 		}

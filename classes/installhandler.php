@@ -1171,15 +1171,19 @@ class InstallHandler extends ActionHandler {
 	private function upgrade_db_post_2264()
 	{
 		// create admin group
-		if ( ! $admin_group = UserGroup::get_by_name( 'admin' ) ) {
+		$admin_group = UserGroup::get_by_name( 'admin' );
+		if ( ! ( $admin_group instanceOf UserGroup ) ) {
 			$admin_group = UserGroup::create( array( 'name' => 'admin' ) );
 		}
 		
 		// add all users to the admin group
 		$users = Users::get_all();
+		$ids = array();
 		foreach ( $users as $user ) {
-			$admin_group->add( $user->id );
+			$ids[] = $user->id;
 		}
+		$admin_group->add( $ids );
+		$admin_group->update();
 
 		// @TODO: Decide on a set of default admin permissions and give them to the admin group
 		return true;
