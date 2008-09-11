@@ -59,7 +59,7 @@ CREATE TEMPORARY TABLE crontab_tmp (
 INSERT INTO posts_tmp SELECT id, slug, content_type, title, guid, content, cached_content, user_id, status, strftime('%s', pubdate) as pubdate, strftime('%s', updated) as updated, strftime('%s', updated) as modified FROM {$prefix}posts;
 INSERT INTO comments_tmp SELECT id, post_id, name, email, url, ip, content, status, strftime('%s', date) as date, type FROM {$prefix}comments;
 INSERT INTO log_tmp SELECT id, user_id, type_id, severity_id, message, data, strftime('%s', timestamp) as timestamp, ip FROM {$prefix}log;
-INSERT INTO crontab_tmp SELECT cron_id, name, callback, strftime('%s', last_run) as last_run, strftime('%s', next_run) as next_run, increment, strftime('%s', start_time) as start_time, strftime('%s', end_time) as end_time, result, notify, cron_class, description FROM {$prefix}crontab;
+INSERT INTO crontab_tmp SELECT * FROM {$prefix}crontab;
 
 DROP TABLE {$prefix}posts;
 DROP TABLE {$prefix}comments;
@@ -127,6 +127,9 @@ INSERT INTO {$prefix}comments SELECT * FROM comments_tmp;
 INSERT INTO {$prefix}log SELECT * FROM log_tmp;
 INSERT INTO {$prefix}crontab SELECT * FROM crontab_tmp;
 
+UPDATE {$prefix}crontab SET last_run=NULL WHERE last_run=0;
+UPDATE {$prefix}crontab SET end_time=NULL WHERE end_time=0;
+
 CREATE TEMPORARY TABLE rewrite_rules_tmp (
   rule_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -164,3 +167,17 @@ INSERT INTO {$prefix}rewrite_rules SELECT * FROM rewrite_rules_tmp;
 
 DROP TABLE {$prefix}permissions;
 DROP TABLE {$prefix}groups_permissions;
+
+CREATE TABLE {$prefix}permissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  name VARCHAR(255) NOT NULL
+);
+
+INSERT INTO {$prefix}permissions (name) VALUES
+  ('denied');
+INSERT INTO {$prefix}permissions (name) VALUES
+  ('read');
+INSERT INTO {$prefix}permissions (name) VALUES
+  ('write');
+INSERT INTO {$prefix}permissions (name) VALUES
+  ('full');
