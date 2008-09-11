@@ -60,8 +60,7 @@ class CronTab extends ActionHandler
 			
 			// set the next run time to the lowest next_run OR a max of one day.
 			$next_cron = DB::get_value( 'SELECT next_run FROM {crontab} ORDER BY next_run ASC LIMIT 1', array() );
-			$next_cron = HabariDateTime::date_create( $next_cron );
-			Options::set('next_cron', min( $next_cron->int, $next_cron->modify( '+1 day' )->int ) );
+			Options::set('next_cron', min( intval($next_cron), $time->modify( '+1 day' )->int ) );
 			Options::set('cron_running', false);
 		}
 	}
@@ -96,7 +95,7 @@ class CronTab extends ActionHandler
 		// @todo next_cron should be the actual next run time and update it when new crons are
 		// added instead of just maxing out at one day..
 		$next_cron = DB::get_value( 'SELECT next_run FROM {crontab} ORDER BY next_run ASC LIMIT 1', array() );
-		Options::set('next_cron', min( $time->int, $time->modify( '+1 day' )->int ) );
+		Options::set('next_cron', min( $next_cron->int, $time->modify( '+1 day' )->int ) );
 		Options::set('cron_running', false);
 	}
 	

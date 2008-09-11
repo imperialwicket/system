@@ -101,14 +101,14 @@ class CronJob extends QueryRecord
 			$this->result = 'executed';
 
 			// it ran successfully, so check if it's time to delete it.
-			if ( $this->end_time && ( $this->now >= $this->end_time ) ) {
+			if ( ! is_null($this->end_time) && ( $this->now >= $this->end_time ) ) {
 				$this->delete();
 				return;
 			}
 		}
 
 		$this->last_run = $this->now;
-		$this->next_run = $this->last_run + $this->increment;
+		$this->next_run = $this->now->int + $this->increment;
 		$this->update();
 	}
 
@@ -128,7 +128,7 @@ class CronJob extends QueryRecord
 		case 'last_run':
 		case 'start_time':
 		case 'end_time':
-			if ( !($value instanceOf HabariDateTime) ) {
+			if ( !($value instanceOf HabariDateTime) && ! is_null( $value ) ) {
 				$value = HabariDateTime::date_create($value);
 			}
 			break;

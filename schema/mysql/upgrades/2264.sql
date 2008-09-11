@@ -102,14 +102,10 @@ DROP TABLE {$prefix}comments_tmp;
 DROP TABLE {$prefix}log_tmp;
 
 ALTER TABLE {$prefix}crontab MODIFY COLUMN last_run INT UNSIGNED;
-ALTER TABLE {$prefix}crontab MODIFY COLUMN next_run INT UNSIGNED;
-ALTER TABLE {$prefix}crontab MODIFY COLUMN increment INT UNSIGNED;
-ALTER TABLE {$prefix}crontab MODIFY COLUMN start_time INT UNSIGNED;
+ALTER TABLE {$prefix}crontab MODIFY COLUMN next_run INT UNSIGNED NOT NULL;
+ALTER TABLE {$prefix}crontab MODIFY COLUMN increment INT UNSIGNED NOT NULL;
+ALTER TABLE {$prefix}crontab MODIFY COLUMN start_time INT UNSIGNED NOT NULL;
 ALTER TABLE {$prefix}crontab MODIFY COLUMN end_time INT UNSIGNED;
-ALTER TABLE {$prefix}crontab MODIFY COLUMN last_run INT UNSIGNED;
-
-ALTER TABLE {$prefix}crontab ALTER COLUMN last_run SET DEFAULT NULL;
-ALTER TABLE {$prefix}crontab ALTER COLUMN end_time SET DEFAULT NULL;
 
 UPDATE {$prefix}crontab SET last_run=NULL WHERE last_run=0;
 UPDATE {$prefix}crontab SET end_time=NULL WHERE end_time=0;
