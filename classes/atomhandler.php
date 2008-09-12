@@ -211,22 +211,21 @@ class AtomHandler extends ActionHandler
 
 			$item= $xml->addChild( 'entry' );
 			$title= $item->addChild( 'title', htmlspecialchars( sprintf( _t( '%1$s on "%2$s"' ), $comment->name, $comment->post->title ) ) );
-			$title= $item->addChild( 'title', _t('Comment on ') . $title . _t(' by ') . $comment->name );
 
 			$link= $item->addChild( 'link' );
 			$link->addAttribute( 'rel', 'alternate' );
 			$link->addAttribute( 'href', $comment->post->permalink . '#comment-' . $comment->id );
 
 			$author= $item->addChild( 'author' );
-			$author_name= $author->addChild( 'name', $comment->name );
+			$author_name= $author->addChild( 'name', htmlspecialchars( $comment->name ) );
 
 			$id= $item->addChild( 'id', $comment->post->guid . '/' . $comment->id );
 
 			$updated= $item->addChild( 'updated', date( 'c', strtotime( $comment->date ) ) );
 
-			$content= $item->addChild( 'content', $comment->content );
+			$content= $item->addChild( 'content', $content );
 			$content->addAttribute( 'type', 'html' );
-			Plugins::act( 'atom_add_comment', $item, $comment->comment );
+			Plugins::act( 'atom_add_comment', $item, $comment );
 		}
 		return $xml;
 	}
@@ -633,6 +632,7 @@ class AtomHandler extends ActionHandler
 
 		$params['status'] = Post::status('published');
 		$params['orderby'] = 'updated DESC';
+		$params['limit'] = Options::get( 'atom_entries' );
 
 		$params= array_merge( $params, $rr_args );
 

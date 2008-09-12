@@ -46,11 +46,11 @@ class Site
 		switch ( true ) {
 		case isset ( $scriptname ):
 			break;
-		case isset( $_SERVER['SCRIPT_URL'] ):
-			$scriptname= $_SERVER['SCRIPT_URL'];
-			break;
 		case isset( $_SERVER['SCRIPT_NAME'] ):
 			$scriptname= $_SERVER['SCRIPT_NAME'];
+			break;
+		case isset( $_SERVER['PHP_SELF'] ):
+			$scriptname= $_SERVER['PHP_SELF'];
 			break;
 		default:
 			Error::raise(_t('Could not determine script name.'));
@@ -146,7 +146,7 @@ class Site
 				break;
 			case 'habari':
 				$url= Site::get_url( 'host' );
-				$path= trim( dirname( $_SERVER['SCRIPT_NAME'] ), '/\\' );
+				$path= trim( dirname( Site::script_name() ), '/\\' );
 				if ( '' != $path ) {
 					$url.= '/' . $path;
 				}
@@ -208,7 +208,7 @@ class Site
 		switch ( strtolower( $name ) )
 		{
 			case 'base':
-				$path= rtrim(dirname($_SERVER["SCRIPT_NAME"]),'/\\');
+				$path= rtrim(dirname(Site::script_name()),'/\\');
 				break;
 			case 'user':
 				if ( Site::is('main') )

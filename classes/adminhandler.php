@@ -66,9 +66,7 @@ class AdminHandler extends ActionHandler
 		$this->theme= Themes::create( 'admin', 'RawPHPEngine', $theme_dir );
 
 		// Add some default stylesheets
-	  Stack::add('admin_stylesheet', array(Site::get_url('habari') . '/3rdparty/blueprint/screen.css', 'screen'), 'blueprint');
-	  Stack::add('admin_stylesheet', array(Site::get_url('habari') . '/3rdparty/blueprint/print.css', 'print'), 'blueprint_print');
-	  Stack::add('admin_stylesheet', array(Site::get_url('admin_theme') . '/css/admin.css', 'screen'), 'admin');
+		Stack::add('admin_stylesheet', array(Site::get_url('admin_theme') . '/css/admin.css', 'screen'), 'admin');
 
 	  // Add some default scripts
 
@@ -165,6 +163,11 @@ class AdminHandler extends ActionHandler
 				'type' => 'text',
 				'helptext' => '',
 				),
+			'atom_entries' => array(
+				'label' => _t('Entries to show in Atom feed'),
+				'type' => 'text',
+				'helptext' => '',
+				),
 			'pingback_send' => array(
 				'label' => _t('Send Pingbacks to Links'),
 				'type' => 'checkbox',
@@ -212,7 +215,12 @@ class AdminHandler extends ActionHandler
 				'type' => 'select',
 				'selectarray' => array_merge( array( '' => 'default' ), array_combine( Locale::list_all(), Locale::list_all() ) ),
 				'helptext' => 'International language code',
-			)
+			),
+			'system_locale' => array(
+				'label' => _t('System Locale'),
+				'type' => 'text',
+				'helptext' => 'The appropriate locale code for your server',
+			),
 		);
 
 			/*$option_items[_t('Presentation')] = array(
@@ -1340,6 +1348,7 @@ class AdminHandler extends ActionHandler
 		if(isset($years)) {
 			$this->theme->years= $years;
 		}
+		
 	}
 
 	/**
@@ -1444,9 +1453,16 @@ class AdminHandler extends ActionHandler
 		$this->fetch_posts( $params );
 		$items= $this->theme->fetch( 'posts_items' );
 		$timeline= $this->theme->fetch( 'timeline_items' );
-
+		
+		$item_ids= array();
+		
+		foreach($this->theme->posts as $post) {
+			$item_ids['p' . $post->id]= 1;
+		}
+		
 		$output= array(
 			'items' => $items,
+			'item_ids' => $item_ids,
 			'timeline' => $timeline,
 		);
 		echo json_encode($output);
@@ -1467,8 +1483,15 @@ class AdminHandler extends ActionHandler
 		$items= $this->theme->fetch( 'comments_items' );
 		$timeline= $this->theme->fetch( 'timeline_items' );
 
+		$item_ids= array();
+		
+		foreach($this->theme->comments as $comment) {
+			$item_ids['p' . $comment->id]= 1;
+		}
+		
 		$output= array(
 			'items' => $items,
+			'item_ids' => $item_ids,
 			'timeline' => $timeline,
 		);
 		echo json_encode($output);
@@ -1845,8 +1868,15 @@ class AdminHandler extends ActionHandler
 		$items= $this->theme->fetch( 'logs_items' );
 		$timeline= $this->theme->fetch( 'timeline_items' );
 
+		$item_ids= array();
+		
+		foreach($this->theme->logs as $log) {
+			$item_ids['p' . $log->id]= 1;
+		}
+		
 		$output= array(
 			'items' => $items,
+			'item_ids' => $item_ids,
 			'timeline' => $timeline,
 		);
 		echo json_encode($output);
