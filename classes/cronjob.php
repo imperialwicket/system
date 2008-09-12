@@ -26,11 +26,11 @@ class CronJob extends QueryRecord
 			'cron_id' => 0,
 			'name' => '',
 			'callback' => '',
-			'last_run' => '',
+			'last_run' => NULL,
 			'next_run' => HabariDateTime::date_create(),
 			'increment' => 86400, // one day
 			'start_time' => HabariDateTime::date_create(),
-			'end_time' => '',
+			'end_time' => NULL,
 			'result' => '',
 			'cron_class' => self::CRON_CUSTOM,
 			'description' => '',
