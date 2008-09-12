@@ -1251,6 +1251,10 @@ body.page-options .item {
 	-webkit-border-radius: 5px;
 }
 
+.plugins #pluginconfigure select {
+	width:30%;
+}
+
 
 /*- THEMES PAGE */
 
