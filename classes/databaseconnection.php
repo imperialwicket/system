@@ -582,7 +582,7 @@ class DatabaseConnection
 		$query.= ' ) VALUES ( ' . trim( str_repeat( '?,', count( $fieldvalues ) ), ',' ) . ' );';
 
 		// need to pass $table on to the $o singleton object;
-			$this->current_table= $table;
+		$this->current_table= $table;
 
 		return $this->query( $query, $values );
 	}
