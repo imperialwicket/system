@@ -1045,6 +1045,11 @@ var theMenu = {
 				});
 			}
 		});
+		
+		// View blog hotkey
+		$.hotkeys.add('v', { propagate: true, disableInInput: true }, function() {
+			location = $('#site').attr('href');
+		});
 
 		// Display hotkeys
 		$('#menu a .hotkey').addClass('enabled');
