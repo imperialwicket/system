@@ -719,7 +719,7 @@ class AdminHandler extends ActionHandler
 
 	public function update_users($handler_vars)
 	{
-		if( $handler_vars['action'] == 'delete' ) {
+		if( isset($handler_vars['delete']) ) {
 
 			$currentuser = User::identify();
 
@@ -788,7 +788,6 @@ class AdminHandler extends ActionHandler
 			}
 
 			Session::notice( $msg_status );
-			return Session::messages_get( true, 'array' );
 		}
 	}
 
@@ -823,6 +822,13 @@ class AdminHandler extends ActionHandler
 		$this->fetch_users();
 
 		extract( $this->handler_vars );
+				
+		if(isset($newuser)) {
+			$action= 'newuser';
+		} elseif(isset($delete)) {
+			$action= 'delete';
+		}
+		
 		$error= '';
 		if ( isset( $action ) && ( 'newuser' == $action ) ) {
 			if ( !isset( $new_pass1 ) || !isset( $new_pass2 ) || empty( $new_pass1 ) || empty( $new_pass2 ) ) {
@@ -863,9 +869,9 @@ class AdminHandler extends ActionHandler
 				$this->theme->assign( 'settings', $settings );
 			}
 		} else if ( isset( $action ) && ( 'delete' == $action ) ) {
-
-			Session::notice($this->update_users($this->handler_vars));
-
+						
+			$this->update_users($this->handler_vars);
+			
 		}
 
 		$this->theme->display('users');
