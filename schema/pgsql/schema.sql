@@ -209,8 +209,8 @@ CREATE TABLE {$prefix}vocabularies (
   id INTEGER NOT NULL DEFAULT nextval('{$prefix}vocabularies_pkey_seq'),
   name VARCHAR(255) NOT NULL,
   description TEXT,
-  heirarchical TINYINT NOT NULL DEFAULT 0,
-  required TINYINT NOT NULL DEFAULT 0,
+  heirarchical SMALLINT NOT NULL DEFAULT 0,
+  required SMALLINT NOT NULL DEFAULT 0,
   PRIMARY KEY (id)
 );
 
@@ -228,7 +228,7 @@ CREATE TABLE {$prefix}object_types (
   PRIMARY KEY (id)
 );
 
-INSERT INTO {$prefix}object_types VALUES (0, 'post');
+INSERT INTO {$prefix}object_types (name) VALUES ('post');
 
 CREATE SEQUENCE {$prefix}tokens_pkey_seq;
 CREATE TABLE {$prefix}tokens (
@@ -248,27 +248,25 @@ CREATE TABLE {$prefix}post_tokens (
 CREATE TABLE {$prefix}group_token_permissions (
   group_id INTEGER NOT NULL,
   token_id INTEGER NOT NULL,
-  permission_flag TINYINT NOT NULL,
+  permission_flag SMALLINT NOT NULL,
   PRIMARY KEY (group_id, token_id)
 );
 
 CREATE TABLE {$prefix}user_token_permissions (
   user_id INTEGER NOT NULL,
   token_id INTEGER NOT NULL,
-  permission_id TINYINT NOT NULL,
+  permission_id SMALLINT NOT NULL,
   PRIMARY KEY (user_id, token_id)
 );
 
-CREATE SEQUENCE {$preifx}permissions_pkey_seq;
+CREATE SEQUENCE {$prefix}permissions_pkey_seq;
 CREATE TABLE {$prefix}permissions (
   id INTEGER NOT NULL DEFAULT nextval('{$prefix}permissions_pkey_seq'),
   name VARCHAR(255) NOT NULL,
   PRIMARY KEY (id)
 );
 
-INSERT INTO {$prefix}permissions (name) VALUES
-  ('denied'),
-  ('read'),
-  ('write'),
-  ('full');
-
+INSERT INTO {$prefix}permissions (name) VALUES ('denied');
+INSERT INTO {$prefix}permissions (name) VALUES ('read');
+INSERT INTO {$prefix}permissions (name) VALUES ('write');
+INSERT INTO {$prefix}permissions (name) VALUES ('full');
