@@ -425,15 +425,21 @@ class AdminHandler extends ActionHandler
 			$post= Post::create( $postdata );
 		}
 
-		if( HabariDateTime::date_create($form->pubdate->value)->format() > HabariDateTime::date_create()->format() && $status == Post::status('published') ) {
+		if( HabariDateTime::date_create($form->pubdate->value)->format() > HabariDateTime::date_create()->format() && isset($status) && $status == Post::status('published') ) {
 			$post->status = Post::status( 'scheduled' );
 		}
 		$post->info->comments_disabled= !$form->comments_enabled->value;
 
 		Plugins::act('publish_post', $post, $form);
 
-		$post->update( $form->minor_edit->value );
-
+		if(isset($post->minor_edit)):
+			$post->update( $form->minor_edit->value );
+		else:
+			$post->update( false );
+		endif;
+		
+		
+		
 		Session::notice( sprintf( _t( 'The post %1$s has been saved as %2$s.' ), sprintf('<a href="%1$s">\'%2$s\'</a>', $post->permalink, $post->title), Post::status_name( $post->status ) ) );
 		Utils::redirect( URL::get( 'admin', 'page=publish&slug=' . $post->slug ) );
 	}
@@ -532,9 +538,11 @@ class AdminHandler extends ActionHandler
 
 		$settings->append('select', 'status', 'null:null', _t('Content State'), array_flip($statuses), 'tabcontrol_select');
 		$settings->status->value = $post->status;
-
-		$settings->append('checkbox', 'minor_edit', 'null:null', _t('Minor Edit'), 'tabcontrol_checkbox');
-		$settings->minor_edit->value = true;
+				
+		if($post->status == Post::status('published')) {
+			$settings->append('checkbox', 'minor_edit', 'null:null', _t('Minor Edit'), 'tabcontrol_checkbox');
+			$settings->minor_edit->value = true;
+		}
 
 		$settings->append('checkbox', 'comments_enabled', 'null:null', _t('Comments Allowed'), 'tabcontrol_checkbox');
 		$settings->comments_enabled->value = $post->info->comments_disabled ? false : true;
