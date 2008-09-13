@@ -27,8 +27,10 @@ class HabariDateTime extends DateTime
 	 **/
 	public static function set_default_timezone( $timezone )
 	{
-		date_default_timezone_set( $timezone );
-		self::$default_timezone = $timezone;
+		if ( $timezone ) {
+			self::$default_timezone = $timezone;
+		}
+		date_default_timezone_set( self::$default_timezone );
 	}
 	
 	public static function get_default_timezone()
