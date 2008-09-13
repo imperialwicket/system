@@ -178,7 +178,7 @@ class S9YImport extends Plugin implements Importer
 				<tr><td>Port rewrites?</td><td><input type="checkbox" name="rewrites_import" value="1" checked="true"></td></tr>
 			</table>
 			<input type="hidden" name="stage" value="1">
-			<p class="submit"><input type="submit" name="import" value="Process with Import" /></p>
+			<p class="submit"><input type="submit" name="import" value="Proceed with Import" /></p>
 WP_IMPORT_STAGE1;
 
 		return $output;
