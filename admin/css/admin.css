@@ -1488,7 +1488,8 @@ body.page-Manage .state {
 	text-align: center;
 	-moz-border-radius: 9px;
 	-webkit-border-radius: 9px;
-	padding:2px 0;
+	padding:3px 0;
+	line-height:18px;
 }
 
 #page .form.comment .buttons .delete {
