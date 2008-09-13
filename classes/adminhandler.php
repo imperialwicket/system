@@ -20,7 +20,7 @@ class AdminHandler extends ActionHandler
 		if ( !$user ) {
 			Session::error( _t('Your session expired.'), 'expired_session' );
 			Session::add_to_set( 'login', $_SERVER['REQUEST_URI'], 'original' );
-			if(URL::get_matched_rule()->name == 'admin_ajax') {
+			if( URL::get_matched_rule()->name == 'admin_ajax' ) {
 				echo '{callback: function(){location.href="'.$_SERVER['HTTP_REFERER'].'"} }';
 			}
 			else {
@@ -425,14 +425,14 @@ class AdminHandler extends ActionHandler
 			$post= Post::create( $postdata );
 		}
 
-		if( HabariDateTime::date_create($form->pubdate->value)->format() > HabariDateTime::date_create()->format() && isset($status) && $status == Post::status('published') ) {
+		if( HabariDateTime::date_create($form->pubdate->value)->format() > HabariDateTime::date_create()->format() && isset( $status ) && $status == Post::status('published') ) {
 			$post->status = Post::status( 'scheduled' );
 		}
 		$post->info->comments_disabled= !$form->comments_enabled->value;
 
 		Plugins::act('publish_post', $post, $form);
 
-		if(isset($post->minor_edit)):
+		if ( isset( $post->minor_edit ) ):
 			$post->update( $form->minor_edit->value );
 		else:
 			$post->update( false );
@@ -477,7 +477,7 @@ class AdminHandler extends ActionHandler
 		$form->set_option( 'form_action', URL::get('admin', 'page=publish' ) );
 		$form->class[] = 'create';
 
-		if(isset($this->handler_vars['slug'])) {
+		if( isset( $this->handler_vars['slug'] ) ) {
 			$post_links = $form->append('wrapper', 'post_links');
 			$post_links->append('static', 'post_permalink', '<a href="'.$post->permalink.'" class="viewpost">'._t('View Post').'</a>');
 			$post_links->class='container';
@@ -539,7 +539,7 @@ class AdminHandler extends ActionHandler
 		$settings->append('select', 'status', 'null:null', _t('Content State'), array_flip($statuses), 'tabcontrol_select');
 		$settings->status->value = $post->status;
 				
-		if($post->status == Post::status('published')) {
+		if ( $post->status == Post::status( 'published' ) ) {
 			$settings->append('checkbox', 'minor_edit', 'null:null', _t('Minor Edit'), 'tabcontrol_checkbox');
 			$settings->minor_edit->value = true;
 		}
