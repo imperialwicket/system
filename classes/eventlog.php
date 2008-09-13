@@ -226,7 +226,7 @@ class EventLog extends ArrayObject
 				elseif ( isset( $paramset['month'] ) ) {
 					$where[]= 'timestamp BETWEEN ? AND ?';
 					$startDate = sprintf( '%d-%02d-%02d', $paramset['year'], $paramset['month'], 1 );
-					$startDate = HabariDateTimesql::date_create( $startDate );
+					$startDate = HabariDateTime::date_create( $startDate );
 					$params[]= $startDate->sql;
 					$params[]= $startDate->modify( '+1 month' )->sql;
 					//$params[]= date( 'Y-m-d H:i:s', mktime( 0, 0, 0, $paramset['month'], 1, $paramset['year'] ) );

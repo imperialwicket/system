@@ -1882,7 +1882,7 @@ class AdminHandler extends ActionHandler
 	 */
 	private function fetch_logs($params = NULL)
 	{
-		$locals= array(
+		$locals = array(
 			'do_delete' => false,
 			'log_ids' => null,
 			'nonce' => '',
@@ -1901,24 +1901,24 @@ class AdminHandler extends ActionHandler
 			'index' => 1,
 		);
 		foreach ( $locals as $varname => $default ) {
-			$$varname= isset( $this->handler_vars[$varname] ) ? $this->handler_vars[$varname] : $default;
+			$$varname = isset( $this->handler_vars[$varname] ) ? $this->handler_vars[$varname] : $default;
 			$this->theme->{$varname}= $$varname;
 		}
 		if ( $do_delete && isset( $log_ids ) ) {
-			$okay= true;
+			$okay = true;
 			if ( empty( $nonce ) || empty( $timestamp ) ||  empty( $PasswordDigest ) ) {
 				$okay= false;
 			}
-			$wsse= Utils::WSSE( $nonce, $timestamp );
+			$wsse = Utils::WSSE( $nonce, $timestamp );
 			if ( $PasswordDigest != $wsse['digest'] ) {
 				$okay= false;
 			}
 			if ( $okay ) {
 				foreach ( $log_ids as $id ) {
-					$ids[]= array( 'id' => $id );
+					$ids[] = array( 'id' => $id );
 				}
-				$to_delete= EventLog::get( array( 'nolimit' => 1 ) );
-				$logstatus= array( 'Deleted %d logs' => 0 );
+				$to_delete = EventLog::get( array( 'nolimit' => 1 ) );
+				$logstatus = array( 'Deleted %d logs' => 0 );
 				foreach ( $to_delete as $log ) {
 					$log->delete();
 					$logstatus['Deleted %d logs']+= 1;
@@ -1935,96 +1935,96 @@ class AdminHandler extends ActionHandler
 		$this->theme->severities= LogEntry::list_severities();
 		$any= array( '0' => 'Any' );
 
-		$modulelist= LogEntry::list_logentry_types();
-		$modules= array();
-		$types= array();
-		$addresses= $any;
-		$ips= DB::get_column( 'SELECT DISTINCT(ip) FROM ' . DB::table( 'log' ) );
+		$modulelist = LogEntry::list_logentry_types();
+		$modules = array();
+		$types = array();
+		$addresses = $any;
+		$ips = DB::get_column( 'SELECT DISTINCT(ip) FROM ' . DB::table( 'log' ) );
 		foreach ( $ips as $ip ) {
-			$addresses[$ip]= long2ip( $ip );
+			$addresses[$ip] = long2ip( $ip );
 		}
-		$this->theme->addresses= $addresses;
+		$this->theme->addresses = $addresses;
 		foreach ( $modulelist as $modulename => $typearray ) {
-			$modules['0,'.implode( ',', $typearray )]= $modulename;
+			$modules['0,'.implode( ',', $typearray )] = $modulename;
 			foreach ( $typearray as $typename => $typevalue ) {
 				if ( !isset( $types[$typename] ) ) {
-					$types[$typename]= '0';
+					$types[$typename] = '0';
 				}
-				$types[$typename].= ',' . $typevalue;
+				$types[$typename] .= ',' . $typevalue;
 			}
 		}
-		$types= array_flip( $types );
-		$this->theme->types= array_merge( $any, $types );
-		$this->theme->modules= array_merge( $any, $modules );
+		$types = array_flip( $types );
+		$this->theme->types = array_merge( $any, $types );
+		$this->theme->modules = array_merge( $any, $modules );
 
 		// set up the users
-		$users_temp= DB::get_results( 'SELECT DISTINCT username, user_id FROM {users} JOIN {log} ON {users}.id = {log}.user_id ORDER BY username ASC' );
+		$users_temp = DB::get_results( 'SELECT DISTINCT username, user_id FROM {users} JOIN {log} ON {users}.id = {log}.user_id ORDER BY username ASC' );
 		array_unshift( $users_temp, new QueryRecord( array( 'username' => 'All', 'user_id' => 0 ) ) );
 		foreach ( $users_temp as $user_temp ) {
-			$users[$user_temp->user_id]= $user_temp->username;
+			$users[$user_temp->user_id] = $user_temp->username;
 		}
-		$this->theme->users= $users;
+		$this->theme->users = $users;
 
 		// set up dates.
-		$dates= DB::get_column( "SELECT timestamp FROM " . DB::table( 'log' ) . ' ORDER BY timestamp DESC' );
-		$dates= array_map( create_function( '$date', 'return strftime( "%Y-%m", strtotime( $date ) );' ), $dates );
+		$dates = DB::get_column( 'SELECT timestamp FROM {log} ORDER BY timestamp DESC' );
+		$dates = array_map( create_function( '$date', 'return HabariDateTime::date_create( $date )->get(\'Y-m\');' ), $dates );
 		array_unshift( $dates, 'Any' );
-		$dates= array_combine( $dates, $dates );
-		$this->theme->dates= $dates;
+		$dates = array_combine( $dates, $dates );
+		$this->theme->dates = $dates;
 
 		// prepare the WSSE tokens
-		$this->theme->wsse= Utils::WSSE();
+		$this->theme->wsse = Utils::WSSE();
 
-		$arguments= array(
+		$arguments = array(
 			'severity' => LogEntry::severity( $severity ),
 			'limit' => $limit,
 			'offset' => ( $index - 1) * $limit,
 		);
 
 		// deduce type_id from module and type
-		$r_type= explode( ',', substr( $type, 2 ) );
-		$r_module= explode( ',', substr( $module, 2 ) );
+		$r_type = explode( ',', substr( $type, 2 ) );
+		$r_module = explode( ',', substr( $module, 2 ) );
 		if( $type != '0' && $module != '0' ) {
-			$arguments['type_id']= array_intersect( $r_type, $r_module );
+			$arguments['type_id'] = array_intersect( $r_type, $r_module );
 		}
 		elseif( $type == '0' ) {
-			$arguments['type_id']= $r_module;
+			$arguments['type_id'] = $r_module;
 		}
 		elseif( $module == '0' ) {
-			$arguments['type_id']= $r_type;
+			$arguments['type_id'] = $r_type;
 		}
 
 		if ( '0' != $address ) {
-			$arguments['ip']= $address;
+			$arguments['ip'] = $address;
 		}
 
 		if ( 'any' != strtolower( $date ) ) {
-			list( $arguments['year'], $arguments['month'] )= explode( '-', $date );
+			list( $arguments['year'], $arguments['month'] ) = explode( '-', $date );
 		}
 		if ( '' != $search ) {
-			$arguments['criteria']= $search;
+			$arguments['criteria'] = $search;
 		}
 		if ( '0' != $user ) {
-			$arguments['user_id']= $user;
+			$arguments['user_id'] = $user;
 		}
 
 		if(is_array($params)) {
 			$arguments = array_merge($arguments, $params);
 		}
 
-		$this->theme->logs= EventLog::get( $arguments );
+		$this->theme->logs = EventLog::get( $arguments );
 
-		$monthcts= EventLog::get( array_merge( $arguments, array( 'month_cts' => true ) ) );
+		$monthcts = EventLog::get( array_merge( $arguments, array( 'month_cts' => true ) ) );
 		foreach( $monthcts as $month ) {
 			if ( isset($years[$month->year]) ) {
-				$years[$month->year][]= $month;
+				$years[$month->year][] = $month;
 		}
 			else {
-				$years[$month->year]= array( $month );
+				$years[$month->year] = array( $month );
 			}
 		}
-		if (isset($years)) {
-			$this->theme->years= $years;
+		if ( isset($years) ) {
+			$this->theme->years = $years;
 		}
 	}
 

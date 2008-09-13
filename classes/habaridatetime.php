@@ -149,6 +149,12 @@ class HabariDateTime extends DateTime
 		$info['mday0'] = substr('0' . $info['mday'], -2, 2);
 		return $info;
 	}
+
+	public function modify( $modify )
+	{
+		parent::modify( $modify );
+		return $this;
+	}
 }
 
 ?>
