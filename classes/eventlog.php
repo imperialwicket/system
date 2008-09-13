@@ -270,7 +270,7 @@ class EventLog extends ArrayObject
 		}
 		// If the month counts are requested, replace the select clause
 		if( isset( $paramset['month_cts'] ) ) {
-			$select= 'MONTH(timestamp) AS month, YEAR(timestamp) AS year, COUNT(*) AS ct';
+			$select= 'MONTH(FROM_UNIXTIME(timestamp)) AS month, YEAR(FROM_UNIXTIME(timestamp)) AS year, COUNT(*) AS ct';
 			$groupby= 'year, month';
 			$orderby= ' ORDER BY year, month';
 		}

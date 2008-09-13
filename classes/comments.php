@@ -216,7 +216,7 @@ class Comments extends ArrayObject
 		// is a count of comments by month being requested?
 		$groupby= '';
 		if ( isset ( $month_cts ) ) {
-			$select= 'MONTH(date) AS month, YEAR(date) AS year, COUNT(id) AS ct';
+			$select= 'MONTH(FROM_UNIXTIME(date)) AS month, YEAR(FROM_UNIXTIME(date)) AS year, COUNT(id) AS ct';
 			$groupby= 'year, month';
 			$orderby= 'year, month';
 		}
