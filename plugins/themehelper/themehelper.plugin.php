@@ -31,18 +31,17 @@ class ThemeHelper extends Plugin
 	 *
 	 * Since we use sprintf() in the final concatenation, you must format passed strings accordingly.
 	 *
-	 * @param mixed $return Incoming return value from other plugins
 	 * @param Theme $theme The current theme object
 	 * @param Post $post Post object used to build the comments link
 	 * @param string $zero String to return when there are no comments
 	 * @param string $one String to return when there is one comment
 	 * @param string $many String to return when there are more than one comment
 	 * @return string Linked string to display for comment count
-	 * @see ThemeHelper::filter_theme_call_comments_count()
+	 * @see ThemeHelper::theme_call_comments_count()
 	 */
-	public function filter_theme_call_comments_link( $return, $theme, $post, $zero = '%d Comments', $one = '1 Comment', $many = '%d Comments')
+	public function theme_call_comments_link( $theme, $post, $zero = '%d Comments', $one = '1 Comment', $many = '%d Comments')
 	{
-		return '<a href="' . $post->permalink . '" title="' . _t( 'Read Comments' ) . '">' . $theme->comments_count($post, $zero, $one, $many) . '</a>';
+		return '<a href="' . $post->permalink . '#comments" title="' . _t( 'Read Comments' ) . '">' . end( $theme->comments_count_return( $post, $zero, $one, $many ) ) . '</a>';
 	}
 
 	/**
