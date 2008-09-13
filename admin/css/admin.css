@@ -1727,7 +1727,7 @@ body.page-tags .container span {
 	white-space: nowrap;
 	}
 
-body.page-tags .container .selected {
+body.page-tags .container .selected label {
 	color: #fb430f;
 }
 
@@ -1737,8 +1737,19 @@ body.page-tags .container sup {
 	margin-left: 2px;
 }
 
-body.page-tags a.tag:hover {
-	color: orange;
+body.page-tags #tag_collection input {
+	display:none;
+}
+
+body.page-tags #tag_collection .item {
+	background: transparent !important;
+	border: none;
+	margin:0;
+	padding:0;
+}
+
+body.page-tags .item.tag label:hover {
+	color: orange !important;
 	text-decoration: none;
 }
 
