@@ -431,7 +431,8 @@ class AdminHandler extends ActionHandler
 		$post->info->comments_disabled= !$form->comments_enabled->value;
 
 		Plugins::act('publish_post', $post, $form);
-		$post->update();
+
+		$post->update( $form->minor_edit->value );
 
 		Session::notice( sprintf( _t( 'The post %1$s has been saved as %2$s.' ), sprintf('<a href="%1$s">\'%2$s\'</a>', $post->permalink, $post->title), Post::status_name( $post->status ) ) );
 		Utils::redirect( URL::get( 'admin', 'page=publish&slug=' . $post->slug ) );
@@ -478,7 +479,7 @@ class AdminHandler extends ActionHandler
 
 		// Create the Title field
 		$form->append('text', 'title', 'null:null', _t('Title'), 'admincontrol_text');
-		$form->title->class= 'important';
+		$form->title->class = 'important';
 		$form->title->tabindex = 1;
 		$form->title->value = $post->title;
 		$this->theme->admin_page = sprintf(_t('Publish %s'), ucwords(Post::type_name($post->content_type)));
@@ -503,18 +504,18 @@ class AdminHandler extends ActionHandler
 		$publish_controls = $form->append('tabs', 'publish_controls');
 
 		// Create the tags selector
-		$tagselector= $publish_controls->append('fieldset', 'tagselector', _t('Tags'));
+		$tagselector = $publish_controls->append('fieldset', 'tagselector', _t('Tags'));
 
-		$tags_buttons= $tagselector->append('wrapper', 'tags_buttons');
-		$tags_buttons->class='container';
+		$tags_buttons = $tagselector->append('wrapper', 'tags_buttons');
+		$tags_buttons->class = 'container';
 		$tags_buttons->append('static', 'clearbutton', '<p class="span-5"><input type="button" value="'._t('Clear').'" id="clear"></p>');
 
-		$tags_list= $tagselector->append('wrapper', 'tags_list');
-		$tags_list->class=' container';
+		$tags_list = $tagselector->append('wrapper', 'tags_list');
+		$tags_list->class = ' container';
 		$tags_list->append('static', 'tagsliststart', '<ul id="tag-list" class="span-19">');
 
-		$tags= Tags::get();
-		$max= Tags::max_count();
+		$tags = Tags::get();
+		$max = Tags::max_count();
 		foreach ($tags as $tag) {
 			$tags_list->append('tag', 'tag_'.$tag->slug, $tag, 'tabcontrol_text');
 		}
@@ -523,14 +524,17 @@ class AdminHandler extends ActionHandler
 
 		// Create the publishing controls
 		// pass "false" to list_post_statuses() so that we don't include internal post statuses
-		$statuses= Post::list_post_statuses( false );
+		$statuses = Post::list_post_statuses( false );
 		unset( $statuses[array_search( 'any', $statuses )] );
-		$statuses= Plugins::filter( 'admin_publish_list_post_statuses', $statuses );
+		$statuses = Plugins::filter( 'admin_publish_list_post_statuses', $statuses );
 
 		$settings = $publish_controls->append('fieldset', 'settings', _t('Settings'));
 
 		$settings->append('select', 'status', 'null:null', _t('Content State'), array_flip($statuses), 'tabcontrol_select');
 		$settings->status->value = $post->status;
+
+		$settings->append('checkbox', 'minor_edit', 'null:null', _t('Minor Edit'), 'tabcontrol_checkbox');
+		$settings->minor_edit->value = true;
 
 		$settings->append('checkbox', 'comments_enabled', 'null:null', _t('Comments Allowed'), 'tabcontrol_checkbox');
 		$settings->comments_enabled->value = $post->info->comments_disabled ? false : true;
