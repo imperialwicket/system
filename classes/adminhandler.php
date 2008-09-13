@@ -143,6 +143,8 @@ class AdminHandler extends ActionHandler
 	public function post_options()
 	{
 		$option_items = array();
+		$timezones = DateTimeZone::listIdentifiers();
+		$timezones = array_combine(array_values($timezones), array_values($timezones));
 
 		$option_items[_t('Name & Tagline')] = array(
 			'title' => array(
@@ -181,20 +183,18 @@ class AdminHandler extends ActionHandler
 			);
 
 		$option_items[_t('Time & Date')] = array(
-			'presets' => array(
+			/*'presets' => array(
 				'label' => _t('Presets'),
 				'type' => 'select',
 				'selectarray' => array(
 					'europe' => _t('Europe')
 					),
 				'helptext' => '',
-				),
+				),*/
 			'timezone' => array(
 				'label' => _t('Time Zone'),
 				'type' => 'select',
-				'selectarray' => array(
-					'1' => 'GMT +1'
-					),
+				'selectarray' => $timezones,
 				'helptext' => 'Adjusts server time to 21.44',
 				),
 			'dateformat' => array(
