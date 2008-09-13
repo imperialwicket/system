@@ -25,9 +25,9 @@ class PGSQLConnection extends DatabaseConnection
 		//$sql= preg_replace( '%YEAR\s*\(\s*([^ ]*)\s*\)%ims', 'date_part(\'year\', ${1})', $sql );
 		//$sql= preg_replace( '%MONTH\s*\(\s*([^ ]*)\s*\)%ims', 'date_part(\'month\', ${1})', $sql );
 		//$sql= preg_replace( '%DAY\s*\(\s*([^ ]*)\s*\)%ims', 'date_part(\'day\', ${1})', $sql );
-		$sql= preg_replace( '%YEAR\s*\(\s*FROM_UNIXTIME\s*\(\s*([^ ]*)\s*\)\s*\)%ims', 'date_part(\'year\', EXTRACT(TIMESTAMP WITH TIME ZONE \'epoch\' + ${1} * INTERVAL \'1 second\'))', $sql );
-		$sql= preg_replace( '%MONTH\s*\(\s*FROM_UNIXTIME\s*\(\s*([^ ]*)\s*\)\s*\)%ims', 'date_part(\'month\', EXTRACT(TIMESTAMP WITH TIME ZONE \'epoch\' + ${1} * INTERVAL \'1 second\'))', $sql );
-		$sql= preg_replace( '%DAY\s*\(\s*FROM_UNIXTIME\s*\(\s*([^ ]*)\s*\)\s*\)%ims', 'date_part(\'day\', EXTRACT(TIMESTAMP WITH TIME ZONE \'epoch\' + ${1} * INTERVAL \'1 second\'))', $sql );
+		$sql= preg_replace( '%YEAR\s*\(\s*FROM_UNIXTIME\s*\(\s*([^ ]*)\s*\)\s*\)%ims', 'date_part(\'year\', \'epoch\'::timestamptz + ${1} * \'1 second\'::interval))', $sql );
+		$sql= preg_replace( '%MONTH\s*\(\s*FROM_UNIXTIME\s*\(\s*([^ ]*)\s*\)\s*\)%ims', 'date_part(\'month\',  \'epoch\'::timestamptz + ${1} * \'1 second\'::interval))', $sql );
+		$sql= preg_replace( '%DAY\s*\(\s*FROM_UNIXTIME\s*\(\s*([^ ]*)\s*\)\s*\)%ims', 'date_part(\'day\',  \'epoch\'::timestamptz + ${1} * \'1 second\'::interval))', $sql );
 		return $sql;
 	}
 
