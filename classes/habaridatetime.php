@@ -6,9 +6,16 @@
 // Unix time is UTC timezone _always_
 class HabariDateTime extends DateTime
 {
-	private static $default_timezone = 'UTC';
+	private static $default_timezone;
 	private static $default_datetime_format = '%c';
 	
+	/**
+	 * Set default timezone to system default on init.
+	 **/
+	public function __static()
+	{
+		self::$default_timezone = date_default_timezone_get();
+	}
 	
 	public function set_default_datetime_format( $format )
 	{
@@ -27,12 +34,14 @@ class HabariDateTime extends DateTime
 	 **/
 	public static function set_default_timezone( $timezone )
 	{
-		if ( $timezone ) {
-			self::$default_timezone = $timezone;
-		}
+		self::$default_timezone = $timezone;
 		date_default_timezone_set( self::$default_timezone );
 	}
 	
+	/**
+	 * Get the timezone for Habari and PHP.
+	 * Defaults to system timezone if not set.
+	 **/
 	public static function get_default_timezone()
 	{
 		return self::$default_timezone;
@@ -148,12 +157,6 @@ class HabariDateTime extends DateTime
 		$info['mon0'] = substr('0' . $info['mon'], -2, 2);
 		$info['mday0'] = substr('0' . $info['mday'], -2, 2);
 		return $info;
-	}
-
-	public function modify( $modify )
-	{
-		parent::modify( $modify );
-		return $this;
 	}
 }
 
