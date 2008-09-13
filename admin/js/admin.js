@@ -270,7 +270,22 @@ var itemManage = {
 				this.checked = 1;
 			}
 		});
+		$('.item .less').click(function() {
+			itemManage.expand($(this).parent());
+		});
 		itemManage.changeItem();
+	},
+	expand: function(item) {
+		$('.item').removeClass('expanded');
+		
+		item.addClass('expanded');
+		
+		$('.more', item).click(function() {
+			itemManage.contract($(this).parent());
+		});
+	},
+	contract: function(item) {
+		item.removeClass('expanded');
 	},
 	selected: [],
 	searchCache: [],

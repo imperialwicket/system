@@ -1105,6 +1105,18 @@ body.page-logs .item input[type=checkbox] {
 	margin-left: 10px;
 }
 
+body.page-logs .item .message {
+	cursor: help;
+}
+
+body.page-logs .item .more, body.page-logs .item.expanded .less {
+	display:none;
+}
+
+body.page-logs .item.expanded .more {
+	display:block;
+}
+
 
 /*- USERS & GROUPS PAGES */
 
