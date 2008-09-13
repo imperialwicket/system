@@ -133,10 +133,10 @@
 	<h2>Regional Settings</h2>
 
 	<div class="item clear" id="timezone">
-		<span class="column span-5">
+		<span class="pct20">
 			<label for="timezone">Timezone</label>
 		</span>
-		<span class="column span-5 last">
+		<span class="pct20">
 			<select id="timezone" name="locale_tz">
 			<?php foreach (DateTimeZone::listIdentifiers() as $tz_identifier) : ?>
 				<option value="<?php echo $tz_identifier; ?>" <?php echo ( $user->info->locale_tz == $tz_identifier) ? 'selected="selected"' : '' ?>><?php echo $tz_identifier; ?></option>
@@ -146,26 +146,26 @@
 	</div>
 
 	<div class="item clear" id="date_format">
-		<span class="column span-5">
+		<span class="pct20">
 			<label for="date_format">Date Format</label>
 		</span>
-		<span class="column span-5">
+		<span class="pct20">
 			<input type="text" name="locale_date_format" class="border" value="<?php echo $user->info->locale_date_format ?>">
 		</span>
-		<span class="column span-9 last helptext">
+		<span class="pct80 helptext">
 			<span><?php HabariDateTime::date_create()->out($user->info->locale_date_format) ?></span>
 		</span>
 	</div>
 
 
 	<div class="item clear" id="time_format">
-		<span class="column span-5">
+		<span class="pct20">
 			<label for="time_format">Time Format</label>
 		</span>
-		<span class="column span-5">
+		<span class="pct20">
 			<input type="text" name="locale_time_format" class="border" value="<?php echo $user->info->locale_time_format ?>">
 		</span>
-		<span class="column span-9 last helptext">
+		<span class="pct80 helptext">
 			<span><?php HabariDateTime::date_create()->out($user->info->locale_time_format) ?></span>
 		</span>
 	</div>
@@ -173,7 +173,7 @@
 
 <?php Plugins::act( 'theme_admin_user', $user ); ?>
 
-</div>
+
 
 <div class="container controls transparent">
 	<span class="pct25">
