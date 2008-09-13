@@ -995,7 +995,8 @@ class AdminHandler extends ActionHandler
 		}
 				
 		// Content
-		$content= $form->append('textarea', 'content', 'null:null', _t('Comment'), 'admincontrol_textarea');
+		$form->append('wrapper', 'content_wrapper');
+		$content= $form->content_wrapper->append('textarea', 'content', 'null:null', _t('Comment'), 'admincontrol_textarea');
 		$content->class= 'resizable';	
 		$content->value= $comment->content;
 		
@@ -1087,6 +1088,7 @@ class AdminHandler extends ActionHandler
 						if($action == 'delete'):
 							$comment->delete();
 							Utils::redirect(URL::get('admin', 'page=comments'));
+							exit();
 						endif;
 						if($action != 'save'):
 							foreach(Comment::list_comment_statuses() as $status):
