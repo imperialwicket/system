@@ -17,12 +17,12 @@ class HabariDateTime extends DateTime
 		self::$default_timezone = date_default_timezone_get();
 	}
 	
-	public function set_default_datetime_format( $format )
+	public static function set_default_datetime_format( $format )
 	{
 		self::$default_datetime_format = $format;
 	}
 	
-	public function get_default_datetime_format()
+	public static function get_default_datetime_format()
 	{
 		return self::$default_datetime_format;
 	}
