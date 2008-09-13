@@ -1065,9 +1065,8 @@ class AdminHandler extends ActionHandler
 	}
 	
 	function get_comment($update= FALSE) {				
-		if(isset($this->handler_vars['id']) && $comment = Comment::get($this->handler_vars['id'])) {			
+		if ( isset( $this->handler_vars['id'] ) && $comment = Comment::get( $this->handler_vars['id'] ) ) {			
 			$this->theme->comment= $comment;		
-			
 			
 			// Convenience array to output actions twice
 			$actions = array(
@@ -1078,43 +1077,41 @@ class AdminHandler extends ActionHandler
 				'Saved' => 'save'
 				);
 			
-			$form= $this->form_comment( $comment, $actions );
-			
-			if($update) {
-				foreach($actions as $key => $action):
-					$id_one= $action . '_1';
-					$id_two= $action . '_2';
-					if($form->$id_one->value != NULL || $form->$id_two->value != NULL):
-						if($action == 'delete'):
+			$form = $this->form_comment( $comment, $actions );
+
+			if ( $update ) {
+				foreach ( $actions as $key => $action ) {
+					$id_one = $action . '_1';
+					$id_two = $action . '_2';
+					if ( $form->$id_one->value != NULL || $form->$id_two->value != NULL ) {
+						if ( $action == 'delete' ) {
 							$comment->delete();
 							Utils::redirect(URL::get('admin', 'page=comments'));
 							exit();
-						endif;
-						if($action != 'save'):
-							foreach(Comment::list_comment_statuses() as $status):
-								if($status == $key):
+						}
+						if ( $action != 'save' ) {
+							foreach ( Comment::list_comment_statuses() as $status ) {
+								if ( $status == $key ) {
 									$comment->status= Comment::status_name( $status );
-
 									$set_status= true;
-								endif;
-							endforeach;
-						endif;
-					endif;
-				endforeach;
+								}
+							}
+						}
+					}
+				}
 
-				$comment->content= $form->content;
+				$comment->content = $form->content;
+				$comment->name = $form->author_name;
+				$comment->url = $form->author_url;
+				$comment->email = $form->author_email;
+				$comment->ip = ip2longz( $form->author_ip );
 
-				$comment->name= $form->author_name;
-				$comment->url= $form->author_url;
-				$comment->email= $form->author_email;
-				$comment->ip= ip2long($form->author_ip);
+				$comment->date = HabariDateTime::date_create( $form->comment_date );
+				$comment->post_id = $form->comment_post;
 
-				$comment->date= $form->comment_date;
-				$comment->post_id= $form->comment_post;
-
-				if(!isset($set_status)):
+				if ( ! isset($set_status) ) {
 					$comment->status= $form->comment_status->value;
-				endif;
+				}
 
 				$comment->update();
 
