@@ -12,7 +12,7 @@ class HabariDateTime extends DateTime
 	/**
 	 * Set default timezone to system default on init.
 	 **/
-	public function __static()
+	public static function __static()
 	{
 		self::$default_timezone = date_default_timezone_get();
 	}
