@@ -554,10 +554,6 @@ class AtomHandler extends ActionHandler
 				$post->content= (string) $xml->content;
 			}
 
-			if ( (string) $xml->pubdate != '' ) {
-				$post->pubdate= (string) $xml->pubdate;
-			}
-
 			if ( isset( $_SERVER['HTTP_SLUG'] ) ) {
 				$post->slug= $_SERVER['HTTP_SLUG'];
 			}
