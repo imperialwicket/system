@@ -125,6 +125,13 @@ class Site
 		switch( strtolower( $name ) )
 		{
 			case 'host':
+				if ( !isset( $_SERVER['HTTP_HOST'] ) ||
+					( isset( $_SERVER['SERVER_PROTOCOL'] ) && $_SERVER['SERVER_PROTOCOL'] == 'HTTP/1.0' ) ) {
+					// we've got HTTP/1.0, on our hands; so don't send back the host:
+					$url = '';
+					break;
+				}
+				// anything after HTTP/1.0, we have a host header, so we should use it
 				$protocol= 'http';
 				// If we're running on a port other than 80, i
 				// add the port number to the value returned
