@@ -969,6 +969,171 @@ class AdminHandler extends ActionHandler
 		$this->display( 'import' );
 	}
 
+	function form_comment($comment, $actions) {		
+		$form= new FormUI( 'comment' );
+		
+		$user= User::identify();
+		
+		// Create the top description
+		$top = $form->append('wrapper', 'buttons_1');
+		$top->class= 'container buttons comment overview';
+		
+		$top->append('static', 'overview', $this->theme->fetch('comment.overview'));
+		
+		$buttons_1 = $top->append('wrapper', 'buttons_1');
+		$buttons_1->class= 'item buttons';
+		
+		
+		foreach($actions as $status => $action) {
+			$id= $action . '_1';
+			if($status == Comment::status_name($comment->status)):
+				$buttons_1->append('static', $id, '<div id="' . $id . '" class="status ' . $action . '">' . Comment::status_name($comment->status) . '</div>');
+			else:
+				$buttons_1->append('submit', $id, _t(ucfirst($action)));
+				$buttons_1->$id->class= 'button ' . $action;		
+			endif;
+		}
+				
+		// Content
+		$content= $form->append('textarea', 'content', 'null:null', _t('Comment'), 'admincontrol_textarea');
+		$content->class= 'resizable';	
+		$content->value= $comment->content;
+		
+		// Create the splitter
+		$comment_controls= $form->append('tabs', 'comment_controls');
+ 
+		// Create the author info
+		$author= $comment_controls->append('fieldset', 'authorinfo', _t('Author'));
+		
+		$author->append('text', 'author_name', 'null:null', _t('Author Name'), 'tabcontrol_text');
+		$author->author_name->value= $comment->name;
+		
+		$author->append('text', 'author_email', 'null:null', _t('Author Email'), 'tabcontrol_text');
+		$author->author_email->value= $comment->email;
+		
+		$author->append('text', 'author_url', 'null:null', _t('Author URL'), 'tabcontrol_text');
+		$author->author_url->value= $comment->url;
+		
+		$author->append('text', 'author_ip', 'null:null', _t('IP Address:'), 'tabcontrol_text');
+		$author->author_ip->value= long2ip($comment->ip);
+		
+		// Create the advanced settings
+		$settings= $comment_controls->append('fieldset', 'settings', _t('Settings'));
+		
+		$settings->append('text', 'comment_date', 'null:null', _t('Date:'), 'tabcontrol_text');
+		$settings->comment_date->value= $comment->date->get('Y-m-d H:i:s');
+		
+		
+		
+		$settings->append('text', 'comment_post', 'null:null', _t('Post ID:'), 'tabcontrol_text');
+		$settings->comment_post->value= $comment->post->id;
+		
+		$statuses= Comment::list_comment_statuses( false );
+		$statuses= Plugins::filter( 'admin_publish_list_comment_statuses', $statuses );
+		$settings->append('select', 'comment_status', 'null:null', _t('Status'), $statuses, 'tabcontrol_select');
+		$settings->comment_status->value = $comment->status;
+		
+		// // Create the stats
+		// $comment_controls->append('fieldset', 'stats_tab', _t('Stats'));
+		// $stats= $form->stats_tab->append('wrapper', 'tags_buttons');
+		// $stats->class='container';
+		// 
+		// $stats->append('static', 'post_count', '<div class="container"><p class="pct25">'._t('Comments on this post:').'</p><p><strong>' . Comments::count_by_slug($comment->post->slug) . '</strong></p></div><hr />');
+		// $stats->append('static', 'ip_count', '<div class="container"><p class="pct25">'._t('Comments from this IP:').'</p><p><strong>' . Comments::count_by_ip($comment->ip) . '</strong></p></div><hr />');
+		// $stats->append('static', 'email_count', '<div class="container"><p class="pct25">'._t('Comments by this author:').'</p><p><strong>' . Comments::count_by_email($comment->email) . '</strong></p></div><hr />');
+		// $stats->append('static', 'url_count', '<div class="container"><p class="pct25">'._t('Comments with this URL:').'</p><p><strong>' . Comments::count_by_url($comment->url) . '</strong></p></div><hr />');
+		
+		// Create the second set of action buttons			
+		$buttons_2 = $form->append('wrapper', 'buttons_2');
+		$buttons_2->class= 'container buttons comment';
+		
+		foreach($actions as $status => $action) {
+			$id= $action . '_2';
+			if($status == Comment::status_name($comment->status)):
+				$buttons_2->append('static', $id, '<div id="' . $id . '" class="status ' . $action . '">' . Comment::status_name($comment->status) . '</div>');
+			else:
+				$buttons_2->append('submit', $id, _t(ucfirst($action)));
+				$buttons_2->$id->class= 'button ' . $action;		
+			endif;
+		}
+		
+		// Allow plugins to alter form
+		Plugins::act('form_comment_edit', $form, $comment);
+		
+		return $form;
+	}
+	
+	function get_comment($update= FALSE) {				
+		if(isset($this->handler_vars['id']) && $comment = Comment::get($this->handler_vars['id'])) {			
+			$this->theme->comment= $comment;		
+			
+			
+			// Convenience array to output actions twice
+			$actions = array(
+				'Deleted' => 'delete',
+				'Spam' => 'spam',
+				'Unapproved' => 'unapprove',
+				'Approved' => 'approve',
+				'Saved' => 'save'
+				);
+			
+			$form= $this->form_comment( $comment, $actions );
+			
+			if($update) {
+				foreach($actions as $key => $action):
+					$id_one= $action . '_1';
+					$id_two= $action . '_2';
+					if($form->$id_one->value != NULL || $form->$id_two->value != NULL):
+						if($action == 'delete'):
+							$comment->delete();
+							Utils::redirect(URL::get('admin', 'page=comments'));
+						endif;
+						if($action != 'save'):
+							foreach(Comment::list_comment_statuses() as $status):
+								if($status == $key):
+									$comment->status= Comment::status_name( $status );
+
+									$set_status= true;
+								endif;
+							endforeach;
+						endif;
+					endif;
+				endforeach;
+
+				$comment->content= $form->content;
+
+				$comment->name= $form->author_name;
+				$comment->url= $form->author_url;
+				$comment->email= $form->author_email;
+				$comment->ip= ip2long($form->author_ip);
+
+				$comment->date= $form->comment_date;
+				$comment->post_id= $form->comment_post;
+
+				if(!isset($set_status)):
+					$comment->status= $form->comment_status->value;
+				endif;
+
+				$comment->update();
+
+				Plugins::act('comment_edit', $comment, $form);
+				
+				Utils::redirect();
+			}
+			
+			$comment->content= $form;
+			$this->theme->form= $form;
+			
+			$this->display('comment');
+		} else {
+			Utils::redirect(URL::get('admin', 'page=comments'));
+		}
+	}
+	
+	function post_comment() {		
+		$this->get_comment(true);
+	}
+
 	function get_comments()
 	{
 		$this->post_comments();

@@ -1450,6 +1450,85 @@ body.page-Manage .state {
 	overflow: hidden;
 }
 
+/*- EDIT COMMENT PAGE */
+.page-comment .overview .textual a, .page-comment .overview .textual strong {
+	color: #000;
+	font-weight: bold;
+}
+
+.page-comment .overview .textual {
+	text-align: center;
+	font: 1.1em 'Helvetica Neue Light', 'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, Sans-Serif;
+	color: #333;
+}
+
+.page-comment .overview .buttons {
+	float:left;
+}
+
+#page .form.comment #content_wrapper {
+	margin-top: 30px;
+}
+
+#page .form.comment #content_wrapper .container, #page .form.comment .container.pagesplitter, #page .form.comment .container.pagesplitter .container {
+	background: transparent none repeat scroll 0% 0%;
+	overflow: visible;
+	padding: 0px;
+	-webkit-box-shadow: none;
+	border:none;
+}
+
+#page .form.comment .buttons .status, #page .form.comment .buttons .button, #page .form.comment .buttons .button input {
+	float: left;
+	width: 130px;
+}
+
+#page .form.comment .buttons .status {
+	text-align: center;
+	-moz-border-radius: 9px;
+	-webkit-border-radius: 9px;
+}
+
+#page .form.comment .buttons .delete {
+	margin-left: 0;
+	margin-right: 20px;
+}
+
+#page .form.comment .buttons .spam {
+	margin-left: 25px;
+	margin-right: 0;
+}
+
+#page .form.comment .buttons .status.spam {
+	background: #f8595f;
+	color: #FFF;
+}
+
+#page .form.comment .buttons .unapprove {
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+#page .form.comment .buttons .status.unapprove {
+	background: #fcd915;
+	color: #333;
+}
+
+#page .form.comment .buttons .approve {
+	margin-left: 0;
+	margin-right: 15px;
+}
+
+#page .form.comment .buttons .status.approve {
+	background: #34DB15;
+	color: #000;
+}
+
+#page .form.comment .buttons .save {
+	margin-left: 20px;
+	margin-right: 0;
+}
+
 /* Inline Comments Editor */
 
 

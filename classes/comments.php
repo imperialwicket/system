@@ -640,7 +640,7 @@ class Comments extends ArrayObject
 		}
 		return null;
 	}
-
+	
 	/**
 	 * static delete_by_status
 	 * delete all the comments and commentinfo for comments with this status
