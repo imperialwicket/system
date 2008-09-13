@@ -13,7 +13,6 @@ class Locale
 	private static $messages= array();
 	private static $plural_function;
 	private static $locale;
-	private static $timezone, $date_format, $time_format;
 
 	/**
 	 * Sets the locale for Habari.
@@ -51,64 +50,6 @@ class Locale
 		return call_user_func_array( 'setlocale', $args );
 	}
 
-	/**
-	 * Sets the timezone for Habari.
-	 * 
-	 * @param string $timezone A timezone name, not an abbreviation, for example 'America/New York'
-	 **/
-	public static function set_timezone( $timezone= NULL )
-	{
-		if ( $timezone == NULL ) {
-			return;
-		}
-		
-		date_default_timezone_set( $timezone );
-		self::$timezone= $timezone;
-	}
-	
-	/**
-	 * Sets the date format for Habari.
-	 * 
-	 * @param string $date_format A timezone name, not an abbreviation, for example 'America/New York'
-	 **/
-	public static function set_date_format( $date_format= NULL )
-	{
-		if ( $date_format == NULL ) {
-			return;
-		}
-		
-		self::$date_format= $date_format;
-	}
-	
-	/**
-	 * Sets the time format for Habari.
-	 * 
-	 * @param string $timezone A timezone name, not an abbreviation, for example 'America/New York'
-	 **/
-	public static function set_time_format( $time_format= NULL )
-	{
-		if ( $time_format == NULL ) {
-			return;
-		}
-		
-		self::$time_format= $time_format;
-	}
-	
-	public static function get_timezone()
-	{
-		return self::$timezone;
-	}
-	
-	public static function get_date_format()
-	{
-		return self::$date_format;
-	}
-	
-	public static function get_time_format()
-	{
-		return self::$time_format;
-	}
-	
 	/**
 	 * Load translations for a given domain and base directory for a pluggable object.
 	 * Translations are stored in gettext-style .mo files.

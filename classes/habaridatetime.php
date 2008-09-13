@@ -2,40 +2,81 @@
 // Unix time is UTC timezone _always_
 class HabariDateTime extends DateTime
 {
+	private static $default_timezone;
+	
+	/**
+	 * Sets the timezone for Habari and PHP.
+	 * 
+	 * @param string $timezone A timezone name, not an abbreviation, for example 'America/New York'
+	 **/
+	public static function set_default_timezone( $timezone = NULL )
+	{
+		date_default_timezone_set( $timezone );
+		self::$default_timezone = $timezone;
+	}
+	
+	static function date_create($time = null, $timezone = null)
+	{
+		if ( $time instanceOf HabariDateTime ) {
+			return $time;
+		}
+		elseif ( $time instanceOf DateTime ) {
+			$time = $time->format('U');
+		}
+		elseif ( $time == null ) {
+			$time = 'now';
+		}
+		elseif ( is_numeric($time) ) {
+			$time = '@' . $time;
+		}
+
+		if ( $timezone === null ) {
+			$timezone = self::get_default_timezone();
+		}
+		
+		// passing the timezone to construct doesn't seem to do anything.
+		$datetime = new HabariDateTime($time);
+		$datetime->set_timezone($timezone);
+		return $datetime;
+	}
+	
+	public static function get_default_timezone()
+	{
+		return self::$default_timezone;
+	}
+	
 	public function modify($modify)
 	{
 		parent::modify($modify);
-		return $this;
 	}
 
-	public function setDate($year, $month, $day)
+	public function set_date($year, $month, $day)
 	{
 		parent::setDate($year, $month, $day);
-		return $this;
 	}
 
-	public function setISODate($year, $week, $day = null)
+	public function set_iso_date($year, $week, $day = null)
 	{
 		parent::setISODate($year, $week, $day);
-		return $this;
 	}
 
-	public function setTime($hour, $minute, $second = null)
+	public function set_time($hour, $minute, $second = null)
 	{
 		parent::setTime($hour, $minute, $second);
-		return $this;
 	}
 
-	public function setTimezone($timezone)
+	public function set_timezone($timezone)
 	{
+		if ( ! $timezone instanceof DateTimeZone ) {
+			$timezone = new DateTimeZone($timezone);
+		}
 		parent::setTimezone($timezone);
-		return $this;
 	}
 
 	public function format($format = null)
 	{
-		if ($format === null) {
-			$format = Locale::get_date_format() . ' ' . Locale::get_time_format();
+		if ( $format === null ) {
+			$format = '%c';
 		}
 		return parent::format($format);
 	}
@@ -47,30 +88,7 @@ class HabariDateTime extends DateTime
 
 	public function out($format = null)
 	{
-		echo $this->format($format);
-	}
-
-	static function date_create($time = null, $timezone = null)
-	{
-		if ($time instanceOf HabariDateTime) {
-			return $time;
-		}
-		elseif ($time instanceOf DateTime) {
-			$time = $time->format('U');
-		}
-		elseif ($time == null) {
-			$time = 'now';
-		}
-		elseif (is_numeric($time)) {
-			$time = '@' . $time;
-		}
-
-		if ($timezone === null) {
-			$timezone = Locale::get_timezone();
-		}
-
-		$datetime = new HabariDateTime($time, new DateTimeZone($timezone));
-		return $datetime;
+		echo $this->get($format);
 	}
 
 	public function __toString()
