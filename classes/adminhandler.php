@@ -144,7 +144,7 @@ class AdminHandler extends ActionHandler
 	{
 		$option_items = array();
 		$timezones = DateTimeZone::listIdentifiers();
-		$timezones = array_combine(array_values($timezones), array_values($timezones));
+		$timezones = array_merge( array( ''=>'' ), array_combine( array_values( $timezones ), array_values( $timezones ) ) );
 
 		$option_items[_t('Name & Tagline')] = array(
 			'title' => array(
