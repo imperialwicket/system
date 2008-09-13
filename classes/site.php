@@ -258,7 +258,7 @@ class Site
 		switch ( strtolower( $name ) )
 		{
 			case 'config_file':
-				$path= Site::get_dir('config') . '/config.php';
+				$path= Site::get_dir('config') . '/user/config.php';
 				break;
 			case 'config':
 				if ( self::$config_path ) {
