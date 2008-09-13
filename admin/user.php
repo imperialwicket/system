@@ -129,7 +129,7 @@
 		</div>	
 </div>
 
-<div class="container settings regionalsettings">
+<div class="container settings regionalsettings" id="regionalsettings">
 	<h2>Regional Settings</h2>
 
 	<div class="item clear" id="timezone">
