@@ -149,27 +149,7 @@ class InstallHandler extends ActionHandler {
 			$this->activate_plugins();
 		}
 
-		// Install a theme.
-		$themes= Utils::glob( Site::get_dir( 'user' ) . '/themes/*', GLOB_ONLYDIR );
-		if ( 1 === count( $themes ) ) {
-			// only one theme exists in /user/themes
-			// assume the user wants that one activated.
-			$theme= basename( $themes[0] );
-			Themes::activate_theme( $theme, $theme );
-		} elseif ( 1 < count( $themes ) ) {
-			// we have multiple user themes installed
-			// select one at random to use
-			$random= rand( 0, count( $themes ) - 1 );
-			$theme= basename( $themes[ $random ] );
-			Themes::activate_theme( $theme, $theme );
-		} else {
-			// no user themes installed
-			// activate a random system theme
-			$themes= Utils::glob( HABARI_PATH . '/system/themes/*', GLOB_ONLYDIR );
-			$random= rand( 0, count( $themes ) - 1 );
-			$theme= basename( $themes[ $random ] );
-			Themes::activate_theme( $theme, $theme );
-		}
+		
 
 		// Installation complete. Secure sqlite if it was chosen as the database type to use
 		if ( $db_type == 'sqlite' ) {
