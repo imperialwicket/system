@@ -425,7 +425,7 @@ class AdminHandler extends ActionHandler
 			$post= Post::create( $postdata );
 		}
 
-		if( HabariDateTime::date_create($form->pubdate->value)->format() > HabariDateTime::date_create()->format() && isset( $status ) && $status == Post::status('published') ) {
+		if( HabariDateTime::date_create($form->pubdate->value) > HabariDateTime::date_create() && $form->status->value == Post::status('published') ) {
 			$post->status = Post::status( 'scheduled' );
 		}
 		$post->info->comments_disabled= !$form->comments_enabled->value;

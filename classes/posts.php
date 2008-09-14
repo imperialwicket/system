@@ -604,7 +604,7 @@ class Posts extends ArrayObject
 	 */
 	public static function publish_scheduled_posts( $params )
 	{
-		$posts= DB::get_results('SELECT * FROM {posts} WHERE status = ? AND pubdate <= ? ORDER BY pubdate DESC', array( Post::status( 'scheduled' ), date( 'Y-m-d H:i:s' ) ), 'Post' );
+		$posts= DB::get_results('SELECT * FROM {posts} WHERE status = ? AND pubdate <= ? ORDER BY pubdate DESC', array( Post::status( 'scheduled' ), HabariDateTime::date_create(), 'Post' );
 		foreach( $posts as $post ) {
 			$post->publish();
 		}
@@ -624,7 +624,7 @@ class Posts extends ArrayObject
 
 		CronTab::delete_cronjob( 'publish_scheduled_posts' );
 		if( $min_time ) {
-			CronTab::add_single_cron( 'publish_scheduled_posts', array( 'Posts', 'publish_scheduled_posts'),  strtotime( $min_time ), 'Next run: ' . $min_time );
+			CronTab::add_single_cron( 'publish_scheduled_posts', array( 'Posts', 'publish_scheduled_posts'),  $min_time, 'Next run: ' . $min_time );
 		}
 	}
 
