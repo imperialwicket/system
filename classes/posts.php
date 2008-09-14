@@ -604,7 +604,7 @@ class Posts extends ArrayObject
 	 */
 	public static function publish_scheduled_posts( $params )
 	{
-		$posts= DB::get_results('SELECT * FROM {posts} WHERE status = ? AND pubdate <= ? ORDER BY pubdate DESC', array( Post::status( 'scheduled' ), HabariDateTime::date_create(), 'Post' );
+		$posts= DB::get_results('SELECT * FROM {posts} WHERE status = ? AND pubdate <= ? ORDER BY pubdate DESC', array( Post::status( 'scheduled' ), HabariDateTime::date_create() ), 'Post' );
 		foreach( $posts as $post ) {
 			$post->publish();
 		}
