@@ -50,7 +50,7 @@ class Comment extends QueryRecord implements IsContent
 			'name' => '',
 			'email' => '',
 			'url' => '',
-			'ip' => '',
+			'ip' => 0,
 			'content' => '',
 			'status' => self::STATUS_UNAPPROVED,
 			'date' => HabariDateTime::date_create(),
