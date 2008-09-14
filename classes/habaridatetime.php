@@ -47,7 +47,7 @@ class HabariDateTime extends DateTime
 		return self::$default_timezone;
 	}
 	
-	static function date_create( $time = null, $timezone = null )
+	public static function date_create( $time = null, $timezone = null )
 	{
 		if ( $time instanceOf HabariDateTime ) {
 			return $time;
