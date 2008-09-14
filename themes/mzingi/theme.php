@@ -69,11 +69,11 @@ class CornerStone extends Theme
 	
 	}
 
-public function act_display_home()
-{
-	//To exclude aside tag from main content loop
-    parent::act_display_home( array( 'not:tag' => 'aside' ) );
-}
+	public function act_display_home( $user_filters= array() )
+	{
+		//To exclude aside tag from main content loop
+	    parent::act_display_home( array( 'not:tag' => 'aside' ) );
+	}
 	
 }
 
