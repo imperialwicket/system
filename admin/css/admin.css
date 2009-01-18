@@ -1404,6 +1404,24 @@ body.page-options .item {
 	font-style:italic;
 }
 
+
+#pluginconfigure .help em {
+	font-style:italic;
+}
+
+#pluginconfigure .help strong {
+	font-weight:bold;
+}
+
+#pluginconfigure .help a, #pluginconfigure .help a:visited {
+	color:#555;
+	text-decoration:underline;
+}
+
+#pluginconfigure .help a:hover, #pluginconfigure .help a:focus {
+	color:#000;
+}
+
 #pluginconfigure .help ol, #pluginconfigure .help ul {
 	margin:5px 20px !important;
 }
