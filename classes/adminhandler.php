@@ -469,7 +469,7 @@ class AdminHandler extends ActionHandler
 				'status' => $form->status->value,
 				'content_type' => $form->content_type->value,
 			);
-			$minor = $false;
+			$minor = false;
 
 			$post = Post::create( $postdata );
 		}
@@ -659,7 +659,20 @@ class AdminHandler extends ActionHandler
 		}
 		$this->theme->authors = $authors;
 
-		$this->theme->currentuser = User::identify();
+		if ( $this->handler_vars['user'] == '' ) {
+			$edit_user = User::identify();
+		}
+		else {
+			$edit_user = User::get_by_name($this->handler_vars['user']);
+		}
+
+		// Redirect to the users management page if we're trying to edit a non-existent user
+		if ( !$edit_user ) {
+			Session::error( _t( 'No such user!' ) );
+			Utils::redirect( URL::get( 'admin', 'page=users' ) );
+		}
+
+		$this->theme->edit_user = $edit_user;
 
 		$this->theme->wsse = Utils::WSSE();
 
@@ -691,8 +704,14 @@ class AdminHandler extends ActionHandler
 		$fields = Plugins::filter( 'adminhandler_post_user_fields', $fields );
 		$posted_fields = $this->handler_vars->filter_keys( array_keys( $fields ) );
 
+		// user_id should always be sent
+		$user_id = isset($posted_fields['user_id']) ? $posted_fields['user_id'] : NULL;
+		if ( NULL == $user_id ) {
+			Utils::redirect( URL::get( 'admin', 'page=users' ) );
+		}
+
 		// Editing someone else's profile? If so, load that user's profile
-		if ( isset($user_id) && ($currentuser->id != $user_id) ) {
+		if ( $currentuser->id != intval($user_id) ) {
 			$user = User::get_by_id( $user_id );
 			$results['user']= $user->username;
 		}
@@ -703,23 +722,26 @@ class AdminHandler extends ActionHandler
 		foreach ( $posted_fields as $posted_field => $posted_value ) {
 			switch ( $posted_field ) {
 				case 'delete': // Deleting a user
-						if ( isset( $user_id ) && ( $currentuser->id != intval( $user_id ) ) ) {
-							$username = $user->username;
-							$posts = Posts::get( array( 'user_id' => $user_id, 'nolimit' => 1 ) );
-							if ( isset( $reassign ) && ( 1 === intval( $reassign ) ) ) {
-								// we're going to re-assign all of this user's posts
-								$newauthor = isset( $author ) ? intval( $author ) : 1;
-								Posts::reassign( $newauthor, $posts );
-							}
-							else {
-								// delete posts
-								foreach ( $posts as $post ) {
-									$post->delete();
-								}
-							}
-							$user->delete();
-							Session::notice( sprintf( _t( '%s has been deleted' ), $username ) );
+					// Can't delete yourself
+					if ( $currentuser->id != intval( $user_id ) ) {
+
+						// We're going to delete the user before we need it, so store the username
+						$username = $user->username;
+						$posts = Posts::get( array( 'user_id' => $user_id, 'nolimit' => 1 ) );
+						if ( isset( $reassign ) && ( 1 === intval( $reassign ) ) ) {
+							// we're going to re-assign all of this user's posts
+							$newauthor = isset( $author ) ? intval( $author ) : 1;
+							Posts::reassign( $newauthor, $posts );
 						}
+						else {
+							// delete posts
+							foreach ( $posts as $post ) {
+								$post->delete();
+							}
+						}
+						$user->delete();
+						Session::notice( sprintf( _t( '%s has been deleted' ), $username ) );
+					}
 					// redirect to main user list
 					$results = array( 'page' => 'users' );
 					Utils::redirect( URL::get( 'admin', $results ) );
@@ -2393,7 +2415,7 @@ class AdminHandler extends ActionHandler
 
 		$permissions= ACL::all_permissions();
 		$access_levels= array('read' => _t('Read'), 'write' => _t('Write'), 'full' => _t('Full'), 'delete' => _t('Deny'), 'unset' => _t('None'));
-		
+
 		foreach($permissions as $permission) {
 			$level= ACL::get_group_permission($group->id, $permission->id);
 			if($level) {
@@ -2426,10 +2448,10 @@ class AdminHandler extends ActionHandler
 						$group->remove($user);
 					}
 				}
-				
+
 				foreach($permissions as $permission) {
 					if(isset($this->handler_vars['permission_' . $permission->id]) && $permission->access != $this->handler_vars['permission_' . $permission->id]) {
-						
+
 						if($this->handler_vars['permission_' . $permission->id] == 'unset') {
 							$group->revoke($permission->id);
 						} elseif($this->handler_vars['permission_' . $permission->id] == 'deny') {
@@ -2440,21 +2462,21 @@ class AdminHandler extends ActionHandler
 						}
 					}
 				}
-				
+
 				Utils::redirect(URL::get('admin', 'page=group&id=' . $group->id));
 				exit;
 			}
-			
+
 
 		}
 
 		$group= UserGroup::get_by_id($this->handler_vars['id']);
 
 		$potentials= array();
-		
+
 		$users= Users::get_all();
 		$users[]= User::anonymous();
-				
+
 		$members= $group->members;
 		foreach($users as $user) {
 			if(in_array($user->id, $members)) {
@@ -2469,7 +2491,7 @@ class AdminHandler extends ActionHandler
 		$this->theme->potentials= $potentials;
 		$this->theme->users = $users;
 		$this->theme->members = $members;
-		
+
 		$this->theme->access_levels= $access_levels;
 		$this->theme->permissions= $permissions;
 
