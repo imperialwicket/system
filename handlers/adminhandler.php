@@ -61,6 +61,18 @@ class AdminHandler extends ActionHandler
 
 		// setup the stacks for javascript in the admin - it's a method so a plugin can call it externally
 		self::setup_stacks();
+
+		spl_autoload_register(array(self, 'autoload'));
+	}
+
+	/**
+	 * Automatically load admin pages. Falls back to Habari's __autoload() if this isn't an admin page.
+	 *
+	 * @param string $class_name Class called by the user
+	 */
+	static function autoload($class_name)
+	{
+		// TODO Everything
 	}
 
 	/**
