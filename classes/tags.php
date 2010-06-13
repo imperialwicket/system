@@ -52,7 +52,7 @@ class Tags extends ArrayObject
 	 **/
 	public static function get_one( $tag )
 	{
-		$term = Tags::vocabulary()->get_term( $tag );
+		$term = self::vocabulary()->get_term( $tag );
 		if ( !$term instanceOf Term ) {
 			return FALSE;
 		}
@@ -80,7 +80,7 @@ class Tags extends ArrayObject
 	 **/
 	public static function rename($master, $tags, $object_type = 'post' )
 	{
-		$vocabulary = Tags::vocabulary();
+		$vocabulary = self::vocabulary();
 		$type_id = Vocabulary::object_type_id( $object_type );
 
 		$post_ids = array();
@@ -149,7 +149,7 @@ class Tags extends ArrayObject
 	 **/
 	public static function max_count()
 	{
-		return DB::get_value( 'SELECT count( t2.object_id ) AS max FROM {terms} t, {object_terms} t2 WHERE t2.term_id = t.id AND t.vocabulary_id = ? GROUP BY t.id ORDER BY max DESC LIMIT 1', array( Tags::vocabulary()->id ) );
+		return DB::get_value( 'SELECT count( t2.object_id ) AS max FROM {terms} t, {object_terms} t2 WHERE t2.term_id = t.id AND t.vocabulary_id = ? GROUP BY t.id ORDER BY max DESC LIMIT 1', array( self::vocabulary()->id ) );
 	}
 
 	/**
@@ -159,7 +159,7 @@ class Tags extends ArrayObject
 	 **/
 	public static function count_total()
 	{
-		return count( Tags::vocabulary()->get_tree() );
+		return count( self::vocabulary()->get_tree() );
 	}
 
 	/**
@@ -170,7 +170,7 @@ class Tags extends ArrayObject
 	 **/
 	public static function post_count($tag, $object_type = 'post' )
 	{
-		$tag = Tags::get_one( $tag );
+		$tag = self::get_one( $tag );
 		return $tag->count( $object_type );
 	}
 
@@ -181,7 +181,7 @@ class Tags extends ArrayObject
 	 **/
 	public static function get_by_text($tag)
 	{
-		return Tags::get_one( $tag );
+		return self::get_one( $tag );
 	}
 
 	/**
@@ -191,7 +191,7 @@ class Tags extends ArrayObject
 	 **/
 	public static function get_by_slug($tag)
 	{
-		return Tags::get_one( $tag );
+		return self::get_one( $tag );
 	}
 
 	/**
@@ -202,7 +202,7 @@ class Tags extends ArrayObject
 	 */
 	public static function get_by_id( $tag )
 	{
-		return Tags::get_one( $tag );
+		return self::get_one( $tag );
 	}
 
 	/**

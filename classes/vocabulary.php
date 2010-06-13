@@ -432,14 +432,8 @@ class Vocabulary extends QueryRecord
 		$new_terms = array();
 
 		// Make sure we have terms and they're in the database.
-//		foreach( $terms as $key => $term ) {
-//			if ( ! $term instanceof Term ) {
-//				$terms[$key] = new Term( $term );
-//			}
-//		}
 		// Key the terms to their id while we're at it.
 		foreach( $terms as $term ) {
-//			$new_term = Term::get( $this->id, $term->term_display );
 			$new_term = Term::get( $this->id, (string)$term );
 			if ( ! $new_term instanceof Term ) {
 				$new_term = $this->add_term( $term );

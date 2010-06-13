@@ -255,20 +255,15 @@ class Format
 	 * @param string $between_last Text to put between the next to last element and the last element
 	 * @return string HTML links with specified separators.
 	 **/
-	public static function tag_and_list($incoming, $between = ', ', $between_last = NULL )
+	public static function tag_and_list($tags, $between = ', ', $between_last = NULL )
 	{
-//		if ( ! is_array( $incoming ) ) {
-//			$incoming = array ( $incoming );
-//		}
-// my additions
-		if ( !$incoming instanceof Tags ) {
-			$incoming = new Tags( $incoming );
+		if ( !$tags instanceof Tags ) {
+			$tags = new Tags( $tags );
 		}
 
-		foreach( $incoming as $tag ) {
+		foreach( $tags as $tag ) {
 			$array[$tag->tag_slug] = $tag->tag_text;
 		}
-// end additions
 
 		if ( $between_last === NULL ) {
 			$between_last = _t(' and ');

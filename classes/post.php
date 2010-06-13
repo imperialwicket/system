@@ -298,7 +298,6 @@ class Post extends QueryRecord implements IsContent
 
 		parent::__construct( $paramarray );
 		if ( isset( $this->fields['tags'] ) ) {
-//			$this->tags = $this->parsetags( $this->fields['tags'] );
 			$this->tags = new Tags( $this->fields['tags'] );
 			unset( $this->fields['tags'] );
 		}
@@ -473,7 +472,6 @@ class Post extends QueryRecord implements IsContent
 			$this->tags = new Tags();
 		}
 		return Tags::save_associations( $this->tags, $this->id );
-//		return $this->tags->save_associations( $this->id );
 	}
 
 	/**
@@ -733,12 +731,6 @@ class Post extends QueryRecord implements IsContent
 				}
 				break;
 			case 'tags':
-//				if ( is_array( $value) ) {
-//					return $this->tags = $value;
-//				}
-//				else {
-//					return $this->tags = $this->parsetags( $value );
-//				}
 				if ( $value instanceof Tags ) {
 					return $this->tags = $value;
 				}
@@ -808,7 +800,6 @@ class Post extends QueryRecord implements IsContent
 		$form->append('text', 'tags', 'null:null', _t('Tags, separated by, commas'), 'admincontrol_text');
 		$form->tags->class = 'check-change';
 		$form->tags->tabindex = 3;
-//		$form->tags->value = implode(', ', $this->get_tags());
 		$values = array();
 		foreach( $this->get_tags() as $tag ) {
 			$values[] = $tag->tag_text;
@@ -1025,18 +1016,6 @@ class Post extends QueryRecord implements IsContent
 	 */
 	private function get_tags()
 	{
-//		if ( empty( $this->tags ) ) {
-//			$result = Tags::get_associations( $this->id );
-//			if ( $result ) {
-//				foreach ( $result as $t ) {
-//					$this->tags[$t->term] = $t->term_display;
-//				}
-//			}
-//		}
-//		if ( count( $this->tags ) == 0 ) {
-//			return array();
-//		}
-//		return $this->tags;
 		if ( empty( $this->tags ) ) {
 			$result = Tags::get_associations( $this->id );
 			if ( $result ) {
