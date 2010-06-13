@@ -298,7 +298,8 @@ class Post extends QueryRecord implements IsContent
 
 		parent::__construct( $paramarray );
 		if ( isset( $this->fields['tags'] ) ) {
-			$this->tags = $this->parsetags( $this->fields['tags'] );
+//			$this->tags = $this->parsetags( $this->fields['tags'] );
+			$this->tags = new Tags( $this->fields['tags'] );
 			unset( $this->fields['tags'] );
 		}
 
@@ -468,7 +469,11 @@ class Post extends QueryRecord implements IsContent
 	 */
 	private function save_tags()
 	{
+		if ( empty( $this->tags ) ) {
+			$this->tags = new Tags();
+		}
 		return Tags::save_associations( $this->tags, $this->id );
+//		return $this->tags->save_associations( $this->id );
 	}
 
 	/**
@@ -584,9 +589,8 @@ class Post extends QueryRecord implements IsContent
 		Plugins::act( 'post_delete_before', $this );
 
 		// delete all the tags associated with this post
-		foreach ( $this->get_tags() as $tag_slug => $tag_text ) {
-			$tag = Tags::get_by_slug( $tag_slug );
-			Tag::detach_from_post( $tag->id, $this->id );
+		foreach( $this->tags as $value ) {
+			Tag::detach_from_post( $value->tag_text, $this->id );
 		}
 
 		// Delete all comments associated with this post
@@ -729,11 +733,17 @@ class Post extends QueryRecord implements IsContent
 				}
 				break;
 			case 'tags':
-				if ( is_array( $value) ) {
+//				if ( is_array( $value) ) {
+//					return $this->tags = $value;
+//				}
+//				else {
+//					return $this->tags = $this->parsetags( $value );
+//				}
+				if ( $value instanceof Tags ) {
 					return $this->tags = $value;
 				}
 				else {
-					return $this->tags = $this->parsetags( $value );
+					return $this->tags = new Tags( $value );
 				}
 			case 'status':
 				return $this->setstatus( $value );
@@ -798,7 +808,12 @@ class Post extends QueryRecord implements IsContent
 		$form->append('text', 'tags', 'null:null', _t('Tags, separated by, commas'), 'admincontrol_text');
 		$form->tags->class = 'check-change';
 		$form->tags->tabindex = 3;
-		$form->tags->value = implode(', ', $this->get_tags());
+//		$form->tags->value = implode(', ', $this->get_tags());
+		$values = array();
+		foreach( $this->get_tags() as $tag ) {
+			$values[] = $tag->tag_text;
+		}
+		$form->tags->value = implode( ', ', $values );
 
 		// Create the splitter
 		$publish_controls = $form->append('tabs', 'publish_controls');
@@ -1006,20 +1021,30 @@ class Post extends QueryRecord implements IsContent
 	/**
 	 * function get_tags
 	 * Gets the tags for the post
-	 * @return array The tags array for this post
+	 * @return Tags object The Tags for this post
 	 */
 	private function get_tags()
 	{
+//		if ( empty( $this->tags ) ) {
+//			$result = Tags::get_associations( $this->id );
+//			if ( $result ) {
+//				foreach ( $result as $t ) {
+//					$this->tags[$t->term] = $t->term_display;
+//				}
+//			}
+//		}
+//		if ( count( $this->tags ) == 0 ) {
+//			return array();
+//		}
+//		return $this->tags;
 		if ( empty( $this->tags ) ) {
 			$result = Tags::get_associations( $this->id );
 			if ( $result ) {
-				foreach ( $result as $t ) {
-					$this->tags[$t->term] = $t->term_display;
-				}
+				$this->tags = $result;
 			}
-		}
-		if ( count( $this->tags ) == 0 ) {
-			return array();
+			else {
+				return new Tags();
+			}
 		}
 		return $this->tags;
 	}
