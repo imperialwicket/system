@@ -11,18 +11,27 @@
 class Tag
 {
 
-	public $tag_text = '';
-	public $tag_slug = '';
-	public $id = 0;
+	private $term = null;
 
 	/**
 	 * Constructor for the Tag class.
-	 * @param array $paramarray an associative array of initial Tag field values.
+	 * @param mixed $params an associative array of initial Tag field values or a Term object.
 	 **/
-	public function __construct( $paramarray = array() )
+	public function __construct( $params )
 	{
-		foreach ( $paramarray as $key => $value ) {
-			$this->$key = $value;
+		if ( $params instanceOf Term ) {
+			$this->term = $params;
+		}
+		else {
+			if ( is_array($params) ) {
+				$params['term_display'] = $params['tag_text'];
+				unset($params['tag_text']);
+				if ( array_key_exists('tag_slug', $params) ) {
+					$params['term'] = $params['tag_slug'];
+					unset($params['tag_slug']);
+				}
+			}
+			$this->term = new Term( $params );
 		}
 	}
 
@@ -34,9 +43,12 @@ class Tag
 	 **/
 	public function __get( $name )
 	{
-		$term = Term::get( Tags::vocabulary()->id, $this->id );
+		$term = $this->get_term();
 
 		switch ( $name ) {
+			case 'id':
+				$out = $term->id;
+				break;
 			case 'tag':
 			case 'tag_text':
 				$out = $term->term_display;
@@ -58,9 +70,34 @@ class Tag
 				$out = $this->get_count();
 				break;
 			default:
+				$out = null;
 				break;
 		}
 		return $out;
+	}
+
+	/**
+	 * function __set
+	 * Implement custom object properties
+	 * @param string Name of property to return
+	 * @return mixed The requested field value
+	 */
+	public function __set( $name, $value )
+	{
+		$term = $this->get_term();
+
+		switch ( $name ) {
+			case 'tag':
+			case 'tag_text':
+				$term->term_display = $value;
+				break;
+			case 'slug':
+			case 'tag_slug':
+				$term->term = $value;;
+				break;
+			default:
+				break;
+		}
 	}
 
 	/**
@@ -180,7 +217,7 @@ class Tag
 		}
 		Plugins::act( 'tag_insert_before', $this );
 
-		$term = new Term( array( 'term' => $this->tag_slug, 'term_display' => $this->tag_text ) );
+		$term = $this->get_term();
 		$term = Tags::vocabulary()->add_term( $term );
 
 		if ( $term ) {
@@ -207,16 +244,9 @@ class Tag
 		}
 		Plugins::act( 'tag_update_before', $this );
 
-		$term = Tags::vocabulary()->get_term( $this->id );
-		$term->term = $this->tag_slug;
-		$term->term_display = $this->tag_text;
+		$term = $this->get_term();
 		$result = $term->update();
-
-		$term = Tags::vocabulary()->get_term( $this->id );
-		if ( $result ) {
-			$this->tag_text = $term->term_display;
-			$this->tag_slug = $term->term;
-		}
+		$this->term = $term;
 
 		Plugins::act( 'tag_update_after', $this );
 		return $result;
@@ -228,8 +258,6 @@ class Tag
 	 */
 	public function delete()
 	{
-		$vocabulary = Tags::vocabulary();
-
 		$allow = true;
 		$allow = Plugins::filter( 'tag_delete_allow', $allow, $this );
 		if ( ! $allow ) {
@@ -239,8 +267,7 @@ class Tag
 		Plugins::act( 'tag_delete_before', $this );
 
 		// Delete the actual term record
-		$term = $vocabulary->get_term( $this->id );
-		$result = $vocabulary->delete_term( $term );
+		$result = Tags::vocabulary()->delete_term( $this->get_term() );
 
 		EventLog::log( sprintf(_t('Tag %1$s (%2$s) deleted.'), $this->id, $this->tag_text), 'info', 'content', 'habari' );
 
@@ -266,8 +293,7 @@ class Tag
 	 **/
 	protected function get_count()
 	{
-		$term = Tags::vocabulary()->get_term( $this->id );
-		return count( $term->objects( Tags::object_type() ) );
+		return count( $this->get_term()->objects( Tags::object_type() ) );
 	}
 
 	/**
@@ -276,8 +302,19 @@ class Tag
 	 **/
 	public function count( $object_type = 'post' )
 	{
-		$term = Tags::vocabulary()->get_term( $this->id );
-		return count( $term->objects( $object_type ) );
+		return count( $this->get_term()->objects( $object_type ) );
+	}
+
+	/**
+	 * Get the internal Term representation of this Tag
+	 * @return Term The internal Term representation of this Tag
+	 **/
+	protected function get_term()
+	{
+		if ( $this->term == null ) {
+			$this->term = Tags::vocabulary()->get_term( $this->id );
+		}
+		return $this->term;
 	}
 
 }

@@ -23,12 +23,7 @@ class Tags extends ArrayObject
 
 		// Turn each of the tags into a Tag
 		if ( count( $tags ) ) {
-			if ( $tags[0] instanceof Term ) {
-				array_walk( $tags, create_function('&$tag', '$tag = new Tag( array( "tag_text" => $tag->term_display, "tag_slug"  => $tag->term, "id" => $tag->id ) );') );
-			}
-			elseif ( is_string( $tags[0] ) ) {
-				array_walk( $tags, create_function('&$tag', '$tag = new Tag( array( "tag_text" => $tag ) );') );
-			}
+			array_walk( $tags, create_function('&$tag', '$tag = new Tag($tag);') );
 		}
 		parent::__construct( $tags );
 
