@@ -431,37 +431,6 @@ class Post extends QueryRecord implements IsContent
 		return false;
 	}
 
-	/**
-	 * Ensure this is an array of tags.
-	 *
-	 * @param Mixed A string to parse for tags or an array of tags.
-	 * @return Array An array of tags
-	 */
-	private static function parsetags( $tags )
-	{
-		if ( is_string( $tags ) ) {
-			if ( '' === $tags ) {
-				return array();
-			}
-			// dirrty ;)
-			$rez = array( '\\"'=>':__unlikely_quote__:', '\\\''=>':__unlikely_apos__:' );
-			$zer = array( ':__unlikely_quote__:'=>'"', ':__unlikely_apos__:'=>"'" );
-			// escape
-			$tagstr = str_replace( array_keys( $rez ), $rez, $tags );
-			// match-o-matic
-			preg_match_all( '/((("|((?<= )|^)\')\\S([^\\3]*?)\\3((?=[\\W])|$))|[^,])+/u', $tagstr, $matches );
-			// cleanup
-			$tags = array_map( 'trim', $matches[0] );
-			$tags = preg_replace( array_fill( 0, count( $tags ), '/^(["\'])(((?!").)+)(\\1)$/'), '$2', $tags );
-			// unescape
-			$tags = str_replace( array_keys( $zer ), $zer, $tags );
-			// hooray
-			return $tags;
-		}
-		elseif ( is_array( $tags ) ) {
-			return $tags;
-		}
-	}
 
 	/**
 	 * Save the tags associated to this post into the terms and object_terms tables
