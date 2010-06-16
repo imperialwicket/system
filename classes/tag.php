@@ -16,23 +16,58 @@ class Tag
 	/**
 	 * Constructor for the Tag class.
 	 * @param mixed $params an associative array of initial Tag field values or a Term object.
+	 *
+	 * @todo Should we disallow array construction?
 	 **/
 	public function __construct( $params )
 	{
+		$term = null;
+
 		if ( $params instanceOf Term ) {
-			$this->term = $params;
-		}
-		else {
-			if ( is_array($params) ) {
-				$params['term_display'] = $params['tag_text'];
-				unset($params['tag_text']);
-				if ( array_key_exists('tag_slug', $params) ) {
-					$params['term'] = $params['tag_slug'];
-					unset($params['tag_slug']);
+			if ( $params->id == 0 ) {
+				// The term isn't from the db, try and retrieve it
+				$term = Tags::vocabulary()->get_term( $params->term );
+				if ( !$term ) {
+					// We have a new term
+					$term = $params;
 				}
 			}
-			$this->term = new Term( $params );
+			else {
+				// This is an existing term
+				$term = $params;
+			}
 		}
+		else {
+			if ( is_string($params) ) {
+				// See if the string matches a tag in the db
+				$term = Tags::vocabulary()->get_term( $params );
+
+				if ( !$term ) {
+					// The term didn't exist, create one
+					$term = new Term( $params );
+				}
+			}
+			else {
+				if ( is_array($params) ) {
+					// See if these params match a tag in the db
+					// This means we ignore a slug if it was passed in. Is that bad?
+					$term = Tags::vocabulary()->get_term( $params['tag_text'] );
+
+					if ( !$term ) {
+						// The term didn't exist, create one
+						$params['term_display'] = $params['tag_text'];
+						unset($params['tag_text']);
+						if ( array_key_exists('tag_slug', $params) ) {
+							$params['term'] = $params['tag_slug'];
+							unset($params['tag_slug']);
+						}
+						$term = new Term( $params );
+					}
+				}
+			}
+		}
+		// If this is a new term, id will still be 0 and will get set when insert() is called
+		$this->term = $term;
 	}
 
 	/**
@@ -43,7 +78,7 @@ class Tag
 	 **/
 	public function __get( $name )
 	{
-		$term = $this->get_term();
+		$term = $this->term;
 
 		switch ( $name ) {
 			case 'id':
@@ -84,7 +119,7 @@ class Tag
 	 */
 	public function __set( $name, $value )
 	{
-		$term = $this->get_term();
+		$term = $this->term;
 
 		switch ( $name ) {
 			case 'tag':
@@ -217,13 +252,13 @@ class Tag
 		}
 		Plugins::act( 'tag_insert_before', $this );
 
-		$term = $this->get_term();
-		$term = Tags::vocabulary()->add_term( $term );
+		$term = Tags::vocabulary()->add_term( $this->term );
 
 		if ( $term ) {
+			$this->term = $term;
 			EventLog::log( sprintf(_t('New tag %1$s (%2$s);  Slug: %3$s'), $this->id, $this->tag_text, $this->tag_slug), 'info', 'content', 'habari' );
 			Plugins::act( 'tag_insert_after', $this );
-			return new Tag( array( 'tag_text' => $term->term_display, 'tag_slug' => $term->term, 'id' => $term->id ) );
+			return new Tag( $this->term );
 		}
 		else {
 			return FALSE;
@@ -244,9 +279,7 @@ class Tag
 		}
 		Plugins::act( 'tag_update_before', $this );
 
-		$term = $this->get_term();
-		$result = $term->update();
-		$this->term = $term;
+		$result = $this->term->update();
 
 		Plugins::act( 'tag_update_after', $this );
 		return $result;
@@ -267,7 +300,7 @@ class Tag
 		Plugins::act( 'tag_delete_before', $this );
 
 		// Delete the actual term record
-		$result = Tags::vocabulary()->delete_term( $this->get_term() );
+		$result = Tags::vocabulary()->delete_term( $this->term );
 
 		EventLog::log( sprintf(_t('Tag %1$s (%2$s) deleted.'), $this->id, $this->tag_text), 'info', 'content', 'habari' );
 
@@ -293,7 +326,7 @@ class Tag
 	 **/
 	protected function get_count()
 	{
-		return count( $this->get_term()->objects( Tags::object_type() ) );
+		return count( $this->term->objects( Tags::object_type() ) );
 	}
 
 	/**
@@ -302,19 +335,7 @@ class Tag
 	 **/
 	public function count( $object_type = 'post' )
 	{
-		return count( $this->get_term()->objects( $object_type ) );
-	}
-
-	/**
-	 * Get the internal Term representation of this Tag
-	 * @return Term The internal Term representation of this Tag
-	 **/
-	protected function get_term()
-	{
-		if ( $this->term == null ) {
-			$this->term = Tags::vocabulary()->get_term( $this->id );
-		}
-		return $this->term;
+		return count( $this->term->objects( $object_type ) );
 	}
 
 }

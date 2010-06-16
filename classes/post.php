@@ -556,8 +556,8 @@ class Post extends QueryRecord implements IsContent
 		Plugins::act( 'post_delete_before', $this );
 
 		// delete all the tags associated with this post
-		foreach( $this->tags as $value ) {
-			Tag::detach_from_post( $value->tag_text, $this->id );
+		foreach( $this->get_tags() as $tag ) {
+			Tag::detach_from_post( $tag->tag_text, $this->id );
 		}
 
 		// Delete all comments associated with this post
@@ -985,13 +985,13 @@ class Post extends QueryRecord implements IsContent
 	 */
 	private function get_tags()
 	{
-		if ( empty( $this->tags ) ) {
+		if ( $this->tags == null ) {
 			$result = Tags::get_associations( $this->id );
 			if ( $result ) {
 				$this->tags = $result;
 			}
 			else {
-				return new Tags();
+				$this->tags = new Tags();
 			}
 		}
 		return $this->tags;
