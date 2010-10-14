@@ -45,9 +45,6 @@ class Block extends QueryRecord implements IsContent, FormStorage
 		else {
 			return parent::__get($name);
 		}
-
-
-
 	}
 
 	/**
@@ -62,12 +59,16 @@ class Block extends QueryRecord implements IsContent, FormStorage
 			case 'id':
 			case 'title':
 			case 'data':
+				parent::__set( $name, $value );
+				$this->unserialize_data();
+				return parent::__get( $name );
+				break;
 			case 'type':
-				return parent::__set($name, $value);
+				return parent::__set( $name, $value );
 				break;
 			default:
-				$this->data_values[$name] = $value;
-				return $this->data_values[$name];
+				$this->data_values[ $name ] = $value;
+				return $this->data_values[ $name ];
 				break;
 		}
 	}
@@ -89,9 +90,7 @@ class Block extends QueryRecord implements IsContent, FormStorage
 	 * @return array Array of columns in the Block table
 	 */
 	public static function default_fields()
-
 	{
-
 		return array(
 			'id' => 0,
 			'title' => '',
@@ -127,6 +126,13 @@ class Block extends QueryRecord implements IsContent, FormStorage
 		);
 		if(isset($this->title)) {
 			array_unshift($types, 'block.' . $this->type . '.' . Utils::slugify($this->title));
+		}
+		if(isset($this->_area)) {
+			$areas = array();
+			foreach($types as $type) {
+				$areas[] = $this->_area . '.' . $type;
+			}
+			$types = array_merge($areas, $types);
 		}
 		$types = Plugins::filter('block_content_type_' . $this->type, $types, $this);
 		return $types;
@@ -264,11 +270,11 @@ class Block extends QueryRecord implements IsContent, FormStorage
 		Plugins::act('block_form_' . $this->type, $form, $this);
 		return $form;
 	}
-	
+
 	/**
 	 * Display a standard success message upon saving the form
-	 * 
-	 * @return 
+	 *
+	 * @return
 	 */
 	public function save_block($form)
 	{

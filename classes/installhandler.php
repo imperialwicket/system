@@ -733,6 +733,7 @@ class InstallHandler extends ActionHandler
 		Options::set('timezone', 'UTC');
 		Options::set('dateformat', 'Y-m-d');
 		Options::set('timeformat', 'g:i a');
+		Options::set('log_min_severity', 3);		// the default logging level - 3 should be 'info'
 
 		// generate a random-ish number to use as the salt for
 		// a SHA1 hash that will serve as the unique identifier for
@@ -1527,30 +1528,6 @@ class InstallHandler extends ActionHandler
 
 	}
 
-	private function upgrade_db_post_3484()
-	{
-		$new_plugins = array();
-		$plugins = Options::get( 'active_plugins' );
-		if ( is_array($plugins) ) {
-			foreach ( $plugins as $filename ) {
-				if ( !file_exists($filename) ) {
-					// try adding base path to stored path
-					$filename = HABARI_PATH . $filename;
-				}
-				if ( file_exists($filename) ) {
-					require_once $filename;
-					$class = Plugins::class_from_filename($filename);
-					$short_file = substr( $filename, strlen( HABARI_PATH ) );
-					if ( $class ) {
-						$new_plugins[$class] = $short_file;
-					}
-				}
-			}
-		}
-
-		Options::set('active_plugins', $new_plugins);
-	}
-
 	private function upgrade_db_post_3539()
 	{
 
@@ -1606,6 +1583,51 @@ class InstallHandler extends ActionHandler
 				DB::insert( "{object_terms}", array( 'term_id' => $new_tag->id, 'object_id' => $id, 'object_type_id' => $type_id ) );
 			}
 		}
+	}
+
+	private function upgrade_db_post_4291()
+	{
+		// get all plugins so the legacy ones can be deactivated.
+		$active_plugins = Plugins::list_active();
+		$all_plugins = Installhandler::get_plugins();
+
+		$legacy_plugins = array();
+		foreach ( $all_plugins as $plugin ) {
+			if ( !isset ( $plugin[ 'info' ] ) ) {
+				$key = array_search( $plugin[ 'file' ], $active_plugins );
+				$legacy_plugins[ $key ] = $plugin[ 'file' ];
+			}
+		}
+		$valid_plugins = array_diff_key( Options::get( 'active_plugins' ) , $legacy_plugins );
+
+		// valid_plugins contains only working plugins, but the classnames are missing. The following was previously upgrade_db_post_3484()
+		$new_plugins = array();
+		if ( is_array( $valid_plugins ) ) {
+			foreach ( $valid_plugins as $filename ) {
+				if ( !file_exists( $filename ) ) {
+					// try adding base path to stored path
+					$filename = HABARI_PATH . $filename;
+				}
+				if ( file_exists( $filename ) ) {
+					// it is now safe to do this since plugins with info() functions are not in $valid_plugins
+					require_once $filename;
+					$class = Plugins::class_from_filename( $filename );
+					$short_file = substr( $filename, strlen( HABARI_PATH ) );
+					if ( $class ) {
+						$new_plugins[ $class ] = $short_file;
+					}
+				}
+			}
+		}
+		// replace option with only the usuable plugins
+		Options::set( 'active_plugins', $new_plugins );
+	}
+	
+	private function upgrade_db_post_4382 ( ) {
+		
+		// add the new logging limit option
+		Options::set( 'log_min_severity', 3 );		// 3 is 'info'
+		
 	}
 
 	/**

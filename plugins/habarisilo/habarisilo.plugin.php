@@ -23,23 +23,28 @@ class HabariSilo extends Plugin implements MediaSilo
 		$user_path = HABARI_PATH . '/' . Site::get_path('user', true);
 		$this->root = $user_path . 'files'; //Options::get('simple_file_root');
 		$this->url = Site::get_url('user', true) . 'files';  //Options::get('simple_file_url');
-
-		if ( !$this->check_files() ) {
-			Session::error( _t( "Habari Silo activation failed. The web server does not have permission to create the 'files' directory for the Habari Media Silo." ) );
-			Plugins::deactivate_plugin( __FILE__ ); //Deactivate plugin
-			Utils::redirect(); //Refresh page. Unfortunately, if not done so then results don't appear
-		}
 	}
 
-	/**
-	* Don't bother loading if the gd library isn't active
-	*/
+	public function filter_activate_plugin( $ok, $file )
+	{
+		if( Plugins::id_from_file($file) == Plugins::id_from_file(__FILE__) ) {
+			if ( !$this->check_files() ) {
+				EventLog::log( _t( "Habari Silo activation failed. The web server does not have permission to create the 'files' directory for the Habari Media Silo." ), 'warning', 'plugin' );
+				Session::error( _t( "Habari Silo activation failed. The web server does not have permission to create the 'files' directory for the Habari Media Silo." ) );
+				$ok = FALSE;
+			}
+			// Don't bother loading if the gd library isn't active
+			if ( !function_exists( 'imagecreatefromjpeg' ) ) {
+				EventLog::log( _t( "Habari Silo activation failed. PHP has not loaded the gd imaging library." ), 'warning', 'plugin' );
+				Session::error( _t( "Habari Silo activation failed. PHP has not loaded the gd imaging library." ) );
+				$ok = FALSE;
+			}
+		}
+		return $ok;
+	}
+
 	public function action_plugin_activation( $file )
 	{
-		if ( !function_exists( 'imagecreatefromjpeg' ) ) {
-			Session::error( _t( "Habari Silo activation failed. PHP has not loaded the gd imaging library." ) );
-			Plugins::deactivate_plugin( __FILE__ );
-		}
 		// Create required tokens
 		ACL::create_token( 'create_directories', _t( 'Create media silo directories' ), 'Administration' );
 		ACL::create_token( 'delete_directories', _t( 'Delete media silo directories' ), 'Administration' );
@@ -132,25 +137,31 @@ class HabariSilo extends Plugin implements MediaSilo
 				$mtime = '';
 
 				if ( !file_exists( dirname( $item ) . '/' . $thumbnail_suffix ) ) {
-					if ( !$this->create_thumbnail( $item ) ) {
-						// there is no thumbnail so use icon based on mimetype.
-						$icon_path = Plugins::filter( 'habarisilo_icon_base_path', dirname($this->get_file()) . '/icons' );
-						$icon_url = Plugins::filter( 'habarisilo_icon_base_url', $this->get_url() . '/icons' );
-						
-						if ( ( $icons = Utils::glob($icon_path . '/*.{png,jpg,gif,svg}', GLOB_BRACE) ) && $mimetype ) {
-							$icon_keys = array_map( create_function('$a', 'return pathinfo($a, PATHINFO_FILENAME);'), $icons );
-							$icons = array_combine($icon_keys, $icons);
-							$icon_filter = create_function('$a, $b', "\$mime = '$mimetype';".'return (((strpos($mime, $a)===0) ? (strlen($a) / strlen($mime)) : 0) >= (((strpos($mime, $b)===0)) ? (strlen($b) / strlen($mime)) : 0)) ? $a : $b;');
-							$icon_key = array_reduce($icon_keys, $icon_filter);
-							if ($icon_key) {
-								$icon = basename($icons[$icon_key]);
-								$thumbnail_url = $icon_url .'/'. $icon;
+					switch(strtolower(substr($item, strrpos($item, '.') + 1))) {
+						case 'jpg':
+						case 'png':
+						case 'gif':
+							if ( !$this->create_thumbnail( $item ) ) {
+								// there is no thumbnail so use icon based on mimetype.
+								$icon_path = Plugins::filter( 'habarisilo_icon_base_path', dirname($this->get_file()) . '/icons' );
+								$icon_url = Plugins::filter( 'habarisilo_icon_base_url', $this->get_url() . '/icons' );
+								
+								if ( ( $icons = Utils::glob($icon_path . '/*.{png,jpg,gif,svg}', GLOB_BRACE) ) && $mimetype ) {
+									$icon_keys = array_map( create_function('$a', 'return pathinfo($a, PATHINFO_FILENAME);'), $icons );
+									$icons = array_combine($icon_keys, $icons);
+									$icon_filter = create_function('$a, $b', "\$mime = '$mimetype';".'return (((strpos($mime, $a)===0) ? (strlen($a) / strlen($mime)) : 0) >= (((strpos($mime, $b)===0)) ? (strlen($b) / strlen($mime)) : 0)) ? $a : $b;');
+									$icon_key = array_reduce($icon_keys, $icon_filter);
+									if ($icon_key) {
+										$icon = basename($icons[$icon_key]);
+										$thumbnail_url = $icon_url .'/'. $icon;
+									}
+									else {
+										// couldn't find an icon so use default
+										$thumbnail_url = $icon_url .'/default.png';
+									}
+								}
 							}
-							else {
-								// couldn't find an icon so use default
-								$thumbnail_url = $icon_url .'/default.png';
-							}
-						}
+						break;
 					}
 				}
 				

@@ -200,6 +200,29 @@ class EventLog extends ArrayObject
 						$params[] = $paramset['type_id'];
 					}
 				}
+				
+				if ( isset( $paramset['module'] ) ) {
+					
+					if ( !is_array( $paramset['module'] ) ) {
+						$paramset['module'] = array( $paramset['module'] );
+					}
+					
+					$where[] = 'type_id IN ( SELECT DISTINCT id FROM {log_types} WHERE module IN ( ' . implode( ', ', array_fill( 0, count( $paramset['module'] ), '?' ) ) . ' ) )';
+					$params = array_merge( $params, $paramset['module'] );
+					
+				}
+				
+				if ( isset( $paramset['type'] ) ) {
+					
+					if ( !is_array( $paramset['type'] ) ) {
+						$paramset['type'] = array( $paramset['type'] );
+					}
+					
+					$where[] = 'type_id IN ( SELECT DISTINCT id FROM {log_types} WHERE type IN ( ' . implode( ', ', array_fill( 0, count( $paramset['type'] ), '?' ) ) . ' ) )';
+					$params = array_merge( $params, $paramset['type'] );
+					
+				}
+				
 				if ( isset( $paramset['ip'] ) ) {
 					$where[] = 'ip = ?';
 					$params[] = $paramset['ip'];
@@ -287,6 +310,7 @@ class EventLog extends ArrayObject
 		}
 		// If the month counts are requested, replace the select clause
 		if( isset( $paramset['month_cts'] ) ) {
+			// @todo shouldn't this hand back to habari to convert to DateTime so it reflects the right timezone?
 			$select = 'MONTH(FROM_UNIXTIME(timestamp)) AS month, YEAR(FROM_UNIXTIME(timestamp)) AS year, COUNT(*) AS ct';
 			$groupby = 'year, month';
 			$orderby = ' ORDER BY year, month';

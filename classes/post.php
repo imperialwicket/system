@@ -361,6 +361,17 @@ class Post extends QueryRecord implements IsContent
 		if ( isset( $this->newfields['slug']) && $this->newfields['slug'] != '' ) {
 			$value = $this->newfields['slug'];
 		}
+		// - the new empty slug whilst in draft or progressing directly to published or scheduled from draft. Also allow changing of slug whilst in scheduled state
+		elseif ( isset( $this->newfields['slug']) && $this->newfields['slug'] == '' ) {
+			if ( $this->fields['status'] == Post::status( 'draft' ) || ( $this->fields['status'] != Post::status( 'draft' ) && $this->newfields['status'] != Post::status( 'draft' ) ) ) {
+				if ( isset( $this->newfields['title'] ) && $this->newfields['title'] != '' ) {
+					$value = $this->newfields['title'];
+				}
+				else {
+					$value = $this->fields['title'];
+				}
+			}
+		}
 		// - the existing slug
 		elseif ( $this->fields['slug'] != '' ) {
 			$value = $this->fields['slug'];
@@ -493,9 +504,10 @@ class Post extends QueryRecord implements IsContent
 	public function update( $minor = true )
 	{
 		$this->modified = HabariDateTime::date_create();
-		if ( ! $minor ) {
+		if ( ! $minor && $this->status != Post::status( 'draft' ) ) {
 			$this->updated = $this->modified;
 		}
+		
 		if ( isset( $this->fields['guid'] ) ) {
 			unset( $this->newfields['guid'] );
 		}
@@ -508,7 +520,7 @@ class Post extends QueryRecord implements IsContent
 		Plugins::act( 'post_update_before', $this );
 
 		// Call setslug() only when post slug is changed
-		if ( isset( $this->newfields['slug'] ) && $this->newfields['slug'] != '' ) {
+		if ( isset( $this->newfields['slug'] ) ) {
 			if ( $this->fields['slug'] != $this->newfields['slug'] ) {
 				$this->setslug();
 			}
@@ -805,6 +817,9 @@ class Post extends QueryRecord implements IsContent
 
 		$settings->append('text', 'pubdate', 'null:null', _t('Publication Time'), 'tabcontrol_text');
 		$settings->pubdate->value = $this->pubdate->format('Y-m-d H:i:s');
+
+		$settings->append('hidden', 'updated', 'null:null' );
+		$settings->updated->value = $this->updated->int;
 
 		$settings->append('text', 'newslug', 'null:null', _t('Content Address'), 'tabcontrol_text');
 		$settings->newslug->value = $this->slug;

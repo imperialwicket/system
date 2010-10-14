@@ -26,24 +26,31 @@ class Options extends Singleton
 	 * Shortcut to return the value of an option
 	 *
 	 * <code>
-	 * 	 $foo = Options::get('foo'); //or
-	 * 	 list($foo, $bar, $baz) = Options::get('foo1', 'bar2', 'baz3'); //or
-	 * 	 extract(Options::get('foo', 'bar', 'baz')); //or
-	 *   list($foo, $bar, $baz) = Options::get(array('foo1', 'bar2', 'baz3')); // useful with array_keys()
+	 * 	 $foo = Options::get('foo'); // returns null if the option 'foo' does not exist
+	 *   list($foo, $bar, $baz) = Options::get( array('foo1', 'bar2', 'baz3') ); // useful with array_keys()
+	 *   $bar = Options::get('foo', 'bar'); // returns 'bar' if the option 'foo' does not exist. useful for avoiding if/then blocks to detect unset options
 	 * </code>
 	 *
-	 * @param string|array $name... The name(s) of the option(s) to retrieve
-	 * @return mixed The option requested or an array of requested options, null if it does not exist
+	 * @param string|array $name The name or an array of names of the option to fetch.
+	 * @param mixed $default_value The value to return for an option if it does not exist.
+	 * @return mixed The option requested or an array of requested options, $default_value for each if the option does not exist
 	 **/
-	public static function get( $name )
+	public static function get( $name, $default_value = null )
 	{
-		if ( func_num_args() > 1 ) {
-			$name = func_get_args();
-		}
 		if ( is_array( $name ) ) {
-			return array_intersect_key( self::instance()->options, array_flip( $name ) );
+			$results = array();
+			foreach ( $name as $k => $v ) {
+				$results[ $k ] = Options::get( $v );	// recursively wrap around ourselves!
+			}
+			return $results;
 		}
-		return self::instance()->$name;
+		
+		if ( self::instance()->$name ) {
+			return self::instance()->$name;
+		}
+		else {
+			return $default_value;
+		}
 	}
 
 	/**
@@ -55,16 +62,74 @@ class Options extends Singleton
 	 */
 	public static function get_group( $prefix )
 	{
-		$results = array();
+
 		if( substr( $prefix, -2 ) != '__' ) {
 			$prefix .= '__';
 		}
-		foreach( self::instance()->options as $key => $value ) {
-			if( strpos( $key, $prefix ) === 0 ) {
-				$results[substr( $key, strlen( $prefix ) )] = $value;
+		
+		$results = array();
+		foreach ( array_keys( self::instance()->options ) as $key ) {
+			
+			if ( strpos( $key, $prefix ) === 0 ) {
+				$results[ substr( $key, strlen( $prefix ) ) ] = Options::get( $key );
 			}
+			
 		}
+		
 		return $results;
+		
+	}
+	
+	/**
+	 * Set a group of options with a specific prefix
+	 * 
+	 * <code>
+	 *   Options::set_group( 'foo', array( 'bar' => 'baz', 'qux' => 'quux' ) );
+	 *   // results in 2 options: foo__bar == baz and foo__qux == quux
+	 * </code>
+	 *
+	 * @param string $prefix The prefix to set
+	 * @param array $values An associative array of all options to be set with that prefix
+	 */
+	public static function set_group ( $prefix, $values ) {
+		
+		if ( substr( $prefix, -2 ) != '__' ) {
+			$prefix .= '__';
+		}
+		
+		// loop through each option, setting it
+		foreach ( $values as $k => $v ) {
+			
+			Options::set( $prefix . $k, $v );
+			
+		}
+		
+	}
+	
+	/**
+	 * Delete a group of options with a specific prefix
+	 * 
+	 * <code>
+	 *   Options::delete_group( 'foo' );
+	 *   // would delete all foo__* option names
+	 * </code>
+	 * 
+	 * @param string $prefix The prefix to delete
+	 */
+	public static function delete_group ( $prefix ) {
+		
+		if ( substr( $prefix, -2 ) != '__' ) {
+			$prefix .= '__';
+		}
+		
+		foreach ( array_keys( self::instance()->options ) as $key ) {
+			
+			if ( strpos( $key, $prefix ) === 0 ) {
+				Options::delete( $key );
+			}
+			
+		}
+		
 	}
 
 	/**
@@ -83,25 +148,46 @@ class Options extends Singleton
 	 * function set
 	 * Shortcut to set the value of an option
 	 *
-	 * <code>Options::set('foo', 'newvalue');</code>
+	 * <code>
+	 *   Options::set('foo', 'newvalue');
+	 *   Options::set( array( 'foo' => 'bar', 'baz' => 'qux' ) );
+	 * </code>
 	 *
-	 * @param string $name Name of the option to set
-	 * @param mixed $value New value of the option to store
+	 * @param string|array $name Name of the option to set or an array of name => value options to set.
+	 * @param mixed $value New value of the option to store. If first parameter is an array, $value is ignored.
 	 **/
 	public static function set( $name, $value = '' )
 	{
-		self::instance()->$name = $value;
+		
+		if ( is_array( $name ) ) {
+			foreach ( $name as $k => $v ) {
+				Options::set( $k, $v );	// recursively wrap around ourselves!
+			}
+		}
+		else {
+			self::instance()->$name = $value;
+		}
+		
 	}
 
 
 	/**
 	 * Shortcut to unset an option in the options table
 	 *
-	 * @param string $name The name of the option
+	 * @param string|array $name The name of the option or an array of names to delete.
 	 */
 	public static function delete( $name )
 	{
-		unset(self::instance()->$name);
+		
+		if ( is_array( $name ) ) {
+			foreach ( $name as $key ) {
+				Options::delete( $key ); // recursively wrap around ourselves!
+			}
+		}
+		else {
+			unset( self::instance()->$name );
+		}
+		
 	}
 
 	/**

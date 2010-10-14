@@ -53,6 +53,13 @@ class Posts extends ArrayObject implements IsContent
 	 */
 	public static function get( $paramarray = array() )
 	{
+
+		// If $paramarray is a querystring, convert it to an array
+		$paramarray = Utils::get_params( $paramarray );
+		
+		// let plugins alter the param array before we use it. could be useful for modifying search results, etc.
+		$paramarray = Plugins::filter( 'posts_get_paramarray', $paramarray );
+
 		$join_params = array();
 		$params = array();
 		$fns = array( 'get_results', 'get_row', 'get_value' );
@@ -65,9 +72,6 @@ class Posts extends ArrayObject implements IsContent
 
 		// Default parameters
 		$orderby = 'pubdate DESC';
-
-		// If $paramarray is a querystring, convert it to an array
-		$paramarray = Utils::get_params( $paramarray );
 
 		// Define the WHERE sets to process and OR in the final SQL statement
 		if ( isset( $paramarray['where'] ) && is_array( $paramarray['where'] ) ) {
@@ -115,7 +119,7 @@ class Posts extends ArrayObject implements IsContent
 						$params[] = (int) $paramset['not:id'];
 					}
 				}
-				if ( isset( $paramset['status'] ) && ( $paramset['status'] != 'any' ) && ( 0 !== $paramset['status'] )) {
+				if ( isset( $paramset['status'] ) && ( $paramset['status'] != 'any' ) && ( 0 !== $paramset['status'] ) ) {
 					if ( is_array( $paramset['status'] ) ) {
 						// remove 'any' from the list if we have an array
 						$paramset['status'] = array_diff( $paramset['status'], array( 'any' ) );
@@ -175,95 +179,116 @@ class Posts extends ArrayObject implements IsContent
 
 				}
 
-				if ( isset( $paramset['tag'] ) || isset( $paramset['tag_slug'] )) {
-					$joins['tag2post_posts'] = ' JOIN {object_terms} ON {posts}.id = {object_terms}.object_id';
-					$joins['tags_tag2post'] = ' JOIN {terms} ON {object_terms}.term_id = {terms}.id';
-
-					if ( isset( $paramset['tag'] ) ) {
-						if ( is_array( $paramset['tag'] ) ) {
-							$where[] = "{terms}.term_display IN (" . implode( ',', array_fill( 0, count( $paramset['tag'] ), '?' ) ) . ")" . '  AND {object_terms}.object_type_id = ?';
-							$params = array_merge( $params, $paramset['tag'] );
-						}
-						else {
-							$where[] = '{terms}.term_display = ? AND {object_terms}.object_type_id = ?';
-							$params[] = (string) $paramset['tag'];
-						}
-					}
-					if ( isset( $paramset['tag_slug'] ) ) {
-						if ( is_array( $paramset['tag_slug'] ) ) {
-							$where[] = "{terms}.term IN (" . implode( ',', array_fill( 0, count( $paramset['tag_slug'] ), '?' ) ) . ")" . ' AND {object_terms}.object_type_id = ?';
-							$params = array_merge( $params, $paramset['tag_slug'] );
-						}
-						else {
-							$where[] = '{terms}.term= ? AND {object_terms}.object_type_id = ?';
-							$params[] = (string) $paramset['tag_slug'];
-						}
-					}
-					$params[] = Vocabulary::object_type_id( Tags::object_type() );
-				}
-
-				if ( isset( $paramset['all:tag'] ) ) {
-					$joins['tag2post_posts'] = ' JOIN {object_terms} ON {posts}.id = {object_terms}.object_id';
-					$joins['tags_tag2post'] = ' JOIN {terms} ON {object_terms}.term_id = {terms}.id';
-
-					if ( is_array( $paramset['all:tag'] ) ) {
-						$where[] = '{terms}.term_display IN (' . Utils::placeholder_string( $paramset['all:tag']) . ')' . ' AND {object_terms}.object_type_id = ?';
-						$params = array_merge( $params, $paramset['all:tag'] );
-
-						$groupby = '{posts}.id';
-						$having = 'count(*) = ' . count( $paramset['all:tag'] );
+				if ( isset( $paramset['vocabulary'] ) ) {
+					$parsed = array();
+					$object_id = 'post';
+					if ( is_string( $paramset['vocabulary'] ) ) {
+						$parsed = Utils::get_params( $paramset['vocabulary'] );
 					}
 					else {
-						// this is actually the same as plain 'tag' for a single tag search - go with it
-						$where[] = '{terms}.term_display = ? AND {object_terms}.object_type_id = ?';
-						$params[] = $paramset['all:tag'];
+						foreach ( $paramset['vocabulary'] as $key => $value ) {
+							$colon = strpos( $key, ':' );
+							$parsed[substr( $key, 0, $colon )][substr( $key, $colon + 1 )] = $value;
+						}
 					}
-					$params[] = Vocabulary::object_type_id( Tags::object_type() );
-				}
+					foreach ( $parsed as $vocab => $value ) {
 
-				if ( isset( $paramset['all:tag_slug'] ) ) {
-					$joins['tag2post_posts'] = ' JOIN {object_terms} ON {posts}.id = {object_terms}.object_id';
-					$joins['tags_tag2post'] = ' JOIN {terms} ON {object_terms}.term_id = {terms}.id';
+					if ( isset( $value['term'] ) || isset( $value['term_display'] ) ) {
+						$joins['term2post_posts'] = ' JOIN {object_terms} ON {posts}.id = {object_terms}.object_id';
+						$joins['terms_term2post'] = ' JOIN {terms} ON {object_terms}.term_id = {terms}.id';
 
-					if ( is_array( $paramset['all:tag_slug'] ) ) {
-						$where[] = '{terms}.term IN (' . Utils::placeholder_string( $paramset['all:tag_slug']) . ')' . ' AND {object_terms}.object_type_id = ?';
-						$params = array_merge( $params, $paramset['all:tag_slug'] );
-
-						$groupby = '{posts}.id';
-						$having = 'count(*) = ' . count( $paramset['all:tag_slug'] );
+						if ( isset( $value['term_display'] ) ) {
+							if ( is_array( $value['term_display'] ) ) {
+								$where[] = "{terms}.term_display IN (" . implode( ',', array_fill( 0, count( $value['term_display'] ), '?' ) ) . ")" . '  AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?) AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id FROM {vocabularies} WHERE {vocabularies}.name = ?)';
+								$params = array_merge( $params, $value['term_display'] );
+							}
+							else {
+								$where[] = '{terms}.term_display = ? AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?) AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id FROM {vocabularies} WHERE {vocabularies}.name = ?)';
+								$params[] = (string) $value['term_display'];
+							}
+						}
+						if ( isset( $value['term'] ) ) {
+							if ( is_array( $value['term'] ) ) {
+								$where[] = "{terms}.term IN (" . implode( ',', array_fill( 0, count( $value['term'] ), '?' ) ) . ")" . ' AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?) AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id FROM {vocabularies} WHERE {vocabularies}.name = ?)';
+								$params = array_merge( $params, $value['term'] );
+							}
+							else {
+								$where[] = '{terms}.term= ? AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?)  AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id FROM {vocabularies} WHERE {vocabularies}.name = ?)';
+								$params[] = (string) $value['term'];
+							}
+						}
+						$params[] = $object_id;
+						$params[] = $vocab;
 					}
-					else {
-						// this is actually the same as plain 'tag' for a single tag search - go with it
-						$where[] = '{terms}.term = ? AND {object_terms}.object_type_id = ?';
-						$params[] = $paramset['all:tag_slug'];
+
+					if ( isset( $value['all:term_display'] ) ) {
+						$joins['term2post_posts'] = ' JOIN {object_terms} ON {posts}.id = {object_terms}.object_id';
+						$joins['terms_term2post'] = ' JOIN {terms} ON {object_terms}.term_id = {terms}.id';
+
+						if ( is_array( $value['all:term_display'] ) ) {
+							$where[] = '{terms}.term_display IN (' . Utils::placeholder_string( $value['all:term_display']) . ')' . ' AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?) AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id FROM {vocabularies} WHERE {vocabularies}.name = ?)';
+							$params = array_merge( $params, $value['all:term_display'] );
+
+							$groupby = '{posts}.id';
+							$having = 'count(*) = ' . count( $value['all:term_display'] );
+						}
+						else {
+							// this is actually the same as plain 'tag' for a single tag search - go with it
+							$where[] = '{terms}.term_display = ? AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?) AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id FROM {vocabularies} WHERE {vocabularies}.name = ?)';
+							$params[] = $value['all:term_display'];
+						}
+						$params[] = $object_id;
+						$params[] = $vocab;
 					}
-					$params[] = Vocabulary::object_type_id( Tags::object_type() );
-				}
 
-				if ( isset( $paramset['not:tag'] ) ) {
-					$nottag = Utils::single_array( $paramset['not:tag'] );
-					$where[] = 'NOT EXISTS (SELECT 1
-						FROM {object_terms}
-						INNER JOIN {terms} ON {terms}.id = {object_terms}.term_id
-						WHERE {terms}.term_display IN (' . Utils::placeholder_string( $nottag ) . ')
-						AND {object_terms}.object_id = {posts}.id
-						AND {object_terms}.object_type_id = ?)
-					';
-					$params = array_merge( $params, $nottag );
-					$params[] = Vocabulary::object_type_id( Tags::object_type() );
-				}
+					if ( isset( $value['all:term'] ) ) {
+						$joins['term2post_posts'] = ' JOIN {object_terms} ON {posts}.id = {object_terms}.object_id';
+						$joins['terms_term2post'] = ' JOIN {terms} ON {object_terms}.term_id = {terms}.id';
 
-				if ( isset( $paramset['not:tag_slug'] ) ) {
-					$nottag = Utils::single_array( $paramset['not:tag_slug'] );
-					$where[] = 'NOT EXISTS (SELECT 1
-						FROM {object_terms}
-						INNER JOIN {terms} ON {terms}.id = {object_terms}.term_id
-						WHERE {terms}.term_display IN (' . Utils::placeholder_string( $nottag ) . ')
-						AND {object_terms}.object_id = {posts}.id
-						AND {object_terms}.object_type_id = ?)
-					';
-					$params = array_merge( $params, $nottag );
-					$params[] = Vocabulary::object_type_id( Tags::object_type() );
+						if ( is_array( $value['all:term'] ) ) {
+							$where[] = '{terms}.term IN (' . Utils::placeholder_string( $value['all:term']) . ')' . ' AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?) AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id from {vocabularies} WHERE {vocabularies}.name = ?)';
+							$params = array_merge( $params, $value['all:term'] );
+
+							$groupby = '{posts}.id';
+							$having = 'count(*) = ' . count( $value['all:term'] );
+						}
+						else {
+							// this is actually the same as plain 'tag' for a single tag search - go with it
+							$where[] = '{terms}.term = ? AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?) AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id FROM {vocabularies} WHERE {vocabularies}.name = ?)';
+							$params[] = $value['all:term'];
+						}
+						$params[] = $object_id;
+						$params[] = $vocab;
+					}
+
+					if ( isset( $value['not:term_display'] ) ) {
+						$nottag = Utils::single_array( $value['not:term_display'] );
+						$where[] = 'NOT EXISTS (SELECT 1
+							FROM {object_terms}
+							INNER JOIN {terms} ON {terms}.id = {object_terms}.term_id
+							WHERE {terms}.term_display IN (' . Utils::placeholder_string( $nottag ) . ')
+							AND {object_terms}.object_id = {posts}.id
+							AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?)  AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id FROM {vocabularies} WHERE {vocabularies}.name = ?))
+						';
+						$params = array_merge( $params, $nottag );
+						$params[] = $object_id;
+						$params[] = $vocab;
+					}
+
+					if ( isset( $value['not:term'] ) ) {
+						$nottag = Utils::single_array( $value['not:term'] );
+						$where[] = 'NOT EXISTS (SELECT 1
+							FROM {object_terms}
+							INNER JOIN {terms} ON {terms}.id = {object_terms}.term_id
+							WHERE {terms}.term_display IN (' . Utils::placeholder_string( $nottag ) . ')
+							AND {object_terms}.object_id = {posts}.id
+							AND {object_terms}.object_type_id IN (SELECT {object_types}.id FROM {object_types} WHERE {object_types}.name = ?)  AND {terms}.vocabulary_id IN (SELECT {vocabularies}.id FROM {vocabularies} WHERE {vocabularies}.name = ?))
+						';
+						$params = array_merge( $params, $nottag );
+						$params[] = $object_id;
+						$params[] = $vocab;
+					}
+				    }
 				}
 
 				if ( isset( $paramset['criteria'] ) ) {
@@ -594,7 +619,7 @@ class Posts extends ArrayObject implements IsContent
 
 		// If the month counts are requested, replaced the select clause
 		if ( isset( $paramset['month_cts'] ) ) {
-			if ( isset( $paramset['tag'] ) || isset( $paramset['tag_slug'] ))
+			if ( isset( $paramset['vocabulary'] ) )
 				$select = 'MONTH(FROM_UNIXTIME(pubdate)) AS month, YEAR(FROM_UNIXTIME(pubdate)) AS year, COUNT(DISTINCT {posts}.id) AS ct';
 			else
 				$select = 'MONTH(FROM_UNIXTIME(pubdate)) AS month, YEAR(FROM_UNIXTIME(pubdate)) AS year, COUNT(*) AS ct';
@@ -746,7 +771,7 @@ class Posts extends ArrayObject implements IsContent
 	 */
 	public static function count_by_tag( $tag, $status = FALSE )
 	{
-		$params = array( 'tag' => $tag, 'count' => 1 );
+		$params = array( 'vocabulary' => array( Tags::vocabulary()->name . ':term_display' => $tag ), 'count' => 1 );
 		if ( FALSE !== $status ) {
 			$params['status'] = $status;
 		}
@@ -761,12 +786,6 @@ class Posts extends ArrayObject implements IsContent
 	 */
 	public static function reassign( $user, $posts )
 	{
-		// allow plugins the opportunity to prevent reassignment
-		$allow = true;
-		$allow = Plugins::filter( 'posts_reassign_allow', $allow );
-		if ( ! $allow ) {
-			return false;
-		}
 
 		if ( ! is_int( $user ) ) {
 			$u = User::get( $user );
@@ -790,6 +809,16 @@ class Posts extends ArrayObject implements IsContent
 				return false;
 		}
 		$ids = implode( ',', $posts );
+
+		// allow plugins the opportunity to prevent the reassignment now that we've verified the user and posts
+		$allow = true;
+		$allow = Plugins::filter( 'posts_reassign_allow', $allow, $user, $posts );
+
+		if ( !$allow ) {
+			return false;
+		}
+
+		// actually perform the reassignment
 		Plugins::act( 'posts_reassign_before', array( $user, $posts ) );
 		$results = DB::query( "UPDATE {posts} SET user_id=? WHERE id IN ({$ids})", array( $user ) );
 		Plugins::act( 'posts_reassign_after', array( $user, $posts ) );
@@ -930,12 +959,12 @@ class Posts extends ArrayObject implements IsContent
 			'user_id' => array(),
 			'status' => array(),
 			'content_type' => array(),
-			'tag' => array(),
-			'info' => array()
+			'term_display' => array(),
+			'info' => array(),
 		);
 		$criteria = '';
 
-		// this says, find stuff that has the keyword at the start, and then some term straight after. 
+		// this says, find stuff that has the keyword at the start, and then some term straight after.
 		// the terms should have no whitespace, or if it does, be ' delimited.
 		// ie tag:foo or tag:'foo bar'
 		$flag_regex = '/(?P<flag>' . implode( '|', array_keys( $keywords ) ) . '):(?P<value>[^\'"][^\s]*(?:\s|$)|([\'"]+)(?P<quotedvalue>[^\3]+)(?<!\\\)\3)/Uui';
@@ -946,7 +975,7 @@ class Posts extends ArrayObject implements IsContent
 		// now we remove those terms from the search string, otherwise the keyword search below has issues. It will pick up things like
 		// from tag:'pair of' -> matches of'
 		$criteria = trim(preg_replace( $flag_regex, '', $search_string));
-		
+
 		// go through flagged things.
 		foreach ($matches as $match) {
 			// switch on the type match. ie status, type et al.
@@ -957,6 +986,7 @@ class Posts extends ArrayObject implements IsContent
 			else {
 				$value = $match['value'];
 			}
+			$value = trim( $value );
 
 			switch( strtolower($match['flag']) )  {
 				case 'author':
@@ -965,7 +995,7 @@ class Posts extends ArrayObject implements IsContent
 					}
 					break;
 				case 'tag':
-					$arguments['tag'][] = $value;
+					$arguments['term_display'][] = $value;
 					break;
 				case 'status':
 					if ( isset( $statuses[$value] ) ) {
@@ -996,6 +1026,10 @@ class Posts extends ArrayObject implements IsContent
 					$arguments[$key] = $arg[0];
 					break;
 			}
+		}
+		if ( isset( $arguments['term_display'] ) ) {
+		    $arguments['vocabulary'] = array( Tags::vocabulary()->name . ':term_display' => $arguments['term_display'] );
+		    unset( $arguments['term_display'] );
 		}
 
 		if ( $criteria != '' ) {
